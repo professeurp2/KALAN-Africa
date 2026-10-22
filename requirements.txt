@@ -1,0 +1,8 @@
+numpy
+pypdf
+requests
+sentence-transformers
+faster-whisper
+piper-tts
+sounddevice
+pytest

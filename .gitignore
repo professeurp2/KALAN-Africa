@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+models/
+data/index.sqlite
+# Manuels officiels : droits de reproduction à clarifier (§13.5) — ne pas publier
+data/programme/*.pdf

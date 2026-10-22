@@ -1,0 +1,12 @@
+{
+  "titre": "Circuit électrique simple",
+  "svg": "circuit_simple.svg",
+  "chapitre": "Chapitre 3 — Le circuit électrique simple",
+  "elements": {
+    "pile": "la pile (générateur), avec sa borne + et sa borne −",
+    "lampe": "la lampe (récepteur)",
+    "interrupteur": "l'interrupteur, qui ouvre ou ferme le circuit",
+    "fils": "les fils de connexion qui forment la boucle",
+    "sens_courant": "la flèche qui montre le sens conventionnel du courant"
+  }
+}
