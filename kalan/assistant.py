@@ -77,13 +77,13 @@ def parse_llm(raw: str, hits: list[Hit], schema: Schema | None) -> Reponse:
     return Reponse(segments, citations, schema if any(s.pointe for s in segments) else None)
 
 
-def ask_llm(prompt: str) -> str:
+def ask_llm(prompt: str, system: str = SYSTEM) -> str:
     r = requests.post(f"{config.OLLAMA_URL}/api/chat", timeout=120, json={
         "model": config.LLM_MODEL,
         "format": "json",
         "stream": False,
         "options": {"temperature": 0.1},
-        "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}],
+        "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
     })
     r.raise_for_status()
     return r.json()["message"]["content"]

@@ -36,5 +36,10 @@ LLM_MODEL = os.environ.get("KALAN_LLM", "qwen2.5:7b")
 WHISPER_MODEL = os.environ.get("KALAN_WHISPER", "small")
 PIPER_VOICE = "fr_FR-siwis-medium"
 SAMPLE_RATE_IN = 16000
+# Mode cours : pour couper Kalan, l'élève doit parler FACTEUR_ECHO fois plus fort que
+# l'écho de Kalan dans le micro. Mesure du 24 oct. 2026 (PC portable, sans casque) :
+# écho ≈ 0,027, pas d'auto-interruption à 2,5. Baisser si l'élève n'arrive pas à couper ;
+# avec un casque, l'écho disparaît et 1,5 suffit.
+FACTEUR_ECHO = float(os.environ.get("KALAN_FACTEUR_ECHO", "2.5"))
 
 REFUS = "Ce n'est pas dans ton programme. Je préfère ne pas inventer : demande à ton professeur."

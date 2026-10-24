@@ -22,31 +22,120 @@ def record_push_to_talk() -> np.ndarray:
     return np.concatenate(frames).ravel() if frames else np.zeros(0, dtype=np.float32)
 
 
-def record_until_silence(silence_s: float = 1.2, max_s: float = 15.0, block_s: float = 0.05) -> np.ndarray:
-    """Mains libres : commence quand l'élève parle, s'arrête après `silence_s` de silence.
+def _rms(x: np.ndarray) -> float:
+    return float(np.sqrt(np.mean(x ** 2)))
 
-    Le seuil s'adapte au bruit de la pièce, mesuré pendant une demi-seconde au départ.
+
+class Micro:
+    """Micro ouvert en continu : détecte quand l'élève parle, y compris pendant que Kalan parle.
+
+    Sans annulation d'écho, le micro entend aussi la voix de Kalan. Pendant que
+    Kalan parle, on ne coupe donc que si le micro capte nettement plus fort que
+    l'écho habituel (FACTEUR_ECHO), mesuré sur les phrases précédentes. Avec un
+    casque, il n'y a plus d'écho et l'élève peut couper à voix normale.
     """
-    import sounddevice as sd
+    BLOCK_S = 0.05
+    PRE_S = 0.3        # garder le début du mot qui a déclenché la détection
+    SILENCE_S = 1.2    # fin de la question
+    MAX_S = 15.0
+    FACTEUR_ECHO = config.FACTEUR_ECHO
+    DUREE_COUPURE = 0.25  # voix forte soutenue avant de couper Kalan
 
-    block = int(config.SAMPLE_RATE_IN * block_s)
-    rms = lambda x: float(np.sqrt(np.mean(x ** 2)))
-    with sd.InputStream(samplerate=config.SAMPLE_RATE_IN, channels=1, dtype="float32", blocksize=block) as stream:
-        noise = np.median([rms(stream.read(block)[0]) for _ in range(int(0.5 / block_s))])
-        seuil = max(3 * noise, 0.01)
-        print("🎤 Je t'écoute… pose ta question.")
-        pre: list[np.ndarray] = []
-        while True:  # attendre la parole, en gardant 0,3 s avant pour ne pas couper le début
-            x = stream.read(block)[0].ravel()
-            pre = (pre + [x])[-int(0.3 / block_s):]
-            if rms(x) > seuil:
-                break
+    def __init__(self):
+        import sounddevice as sd
+
+        self.block = int(config.SAMPLE_RATE_IN * self.BLOCK_S)
+        self.stream = sd.InputStream(samplerate=config.SAMPLE_RATE_IN, channels=1,
+                                     dtype="float32", blocksize=self.block)
+        self.stream.start()
+        self.echo: float | None = None
+        self.calibrer()
+
+    def _lire(self) -> np.ndarray:
+        return self.stream.read(self.block)[0].ravel()
+
+    def _vider(self):
+        """Jeter l'audio accumulé pendant que Kalan réfléchissait."""
+        n = self.stream.read_available
+        if n:
+            self.stream.read(n)
+
+    def calibrer(self, duree: float = 0.5):
+        self._vider()
+        self.bruit = float(np.median([_rms(self._lire()) for _ in range(int(duree / self.BLOCK_S))]))
+        self.seuil = max(3 * self.bruit, 0.01)
+
+    def _jusqu_au_silence(self, pre: list[np.ndarray]) -> np.ndarray:
         frames, calme = list(pre), 0.0
-        while calme < silence_s and len(frames) * block_s < max_s:
-            x = stream.read(block)[0].ravel()
+        while calme < self.SILENCE_S and len(frames) * self.BLOCK_S < self.MAX_S:
+            x = self._lire()
             frames.append(x)
-            calme = calme + block_s if rms(x) < seuil else 0.0
-    return np.concatenate(frames)
+            calme = calme + self.BLOCK_S if _rms(x) < self.seuil else 0.0
+        return np.concatenate(frames)
+
+    def ecouter(self, attente: float | None = None) -> np.ndarray | None:
+        """Attend que l'élève parle (au plus `attente` s, sinon sans limite), puis enregistre jusqu'au silence."""
+        self._vider()
+        pre: list[np.ndarray] = []
+        n = int(self.PRE_S / self.BLOCK_S)
+        t = 0.0
+        while attente is None or t < attente:
+            x = self._lire()
+            t += self.BLOCK_S
+            pre = (pre + [x])[-n:]
+            if _rms(x) > self.seuil:
+                return self._jusqu_au_silence(pre)
+        return None
+
+    def jouer(self, pcm: np.ndarray, rate: int) -> np.ndarray | None:
+        """Joue la voix de Kalan en écoutant. Si l'élève parle par-dessus, coupe et renvoie ce qu'il dit."""
+        import sounddevice as sd
+
+        self._vider()
+        sd.play(pcm, rate)
+        # Première phrase : écho encore inconnu, on ne coupe pas.
+        seuil = float("inf") if self.echo is None else max(self.seuil, self.FACTEUR_ECHO * self.echo)
+        niveaux, pre, fort, t = [], [], 0, 0.0
+        n_pre, n_fort = int(self.PRE_S / self.BLOCK_S), int(self.DUREE_COUPURE / self.BLOCK_S)
+        while t < len(pcm) / rate + 0.1:
+            x = self._lire()
+            t += self.BLOCK_S
+            r = _rms(x)
+            niveaux.append(r)
+            pre = (pre + [x])[-n_pre:]
+            fort = fort + 1 if r > seuil else 0
+            if fort >= n_fort:
+                sd.stop()
+                return self._jusqu_au_silence(pre)
+        sd.wait()
+        p90 = float(np.percentile(niveaux, 90))
+        self.echo = p90 if self.echo is None else 0.7 * self.echo + 0.3 * p90
+        return None
+
+
+class ClasseVocale:
+    """La classe réelle pour kalan.cours : haut-parleur, micro, Whisper, écran texte."""
+
+    def __init__(self, transcrire: "Transcriber", speaker: "Speaker", micro: Micro):
+        self.transcrire, self.speaker, self.micro = transcrire, speaker, micro
+
+    def dire(self, seg) -> str | None:
+        print(f"💬 {seg.texte}" + (f"   [→ pointe : {seg.pointe}]" if seg.pointe else ""))
+        return self._texte(self.micro.jouer(self.speaker.synth(seg.texte), self.speaker.rate))
+
+    def ecouter(self, attente: float) -> str | None:
+        return self._texte(self.micro.ecouter(attente))
+
+    def afficher(self, texte: str):
+        print(texte)
+
+    def _texte(self, audio: np.ndarray | None) -> str | None:
+        if audio is None:
+            return None
+        texte = self.transcrire(audio).strip()
+        if texte:
+            print(f"🙋 {texte}")
+        return texte or None
 
 
 class Transcriber:

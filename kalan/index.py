@@ -80,6 +80,11 @@ class Index:
     def count(self) -> int:
         return self.db.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
 
+    def chunks(self) -> list[Chunk]:
+        """Tous les passages, dans l'ordre du manuel."""
+        rows = self.db.execute("SELECT source, chapitre, lecon, page, text FROM chunks ORDER BY id").fetchall()
+        return [Chunk(*r) for r in rows]
+
     def titres(self) -> list[str]:
         rows = self.db.execute("SELECT DISTINCT chapitre, lecon FROM chunks ORDER BY id").fetchall()
         return list(dict.fromkeys(t for r in rows for t in r if t))

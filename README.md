@@ -32,7 +32,17 @@ python -m kalan.ingest data/programme --reset   # indexer les chapitres
 python -m kalan.cli                              # questions au clavier
 python -m kalan.cli --voix                       # micro : Entrée pour parler, Entrée pour finir
 python -m kalan.cli --voix --mains-libres        # micro : écoute dès qu'on parle (démo, salle calme)
+python -m kalan.cli --cours                      # Kalan fait cours ; on l'interrompt à la voix
 ```
+
+**Mode cours.** Kalan déroule le chapitre leçon par leçon, en pointant le schéma, et laisse
+une courte pause après chaque phrase. L'élève peut parler à tout moment, même pendant que
+Kalan parle : Kalan s'arrête, répond (réponse ancrée et citée), dit « On reprend » et redit la
+phrase coupée. « Répète », « continue » et « arrête » sont compris.
+
+Le texte oral du cours est écrit une fois par le LLM et gardé dans `data/cours/*.json` :
+**un enseignant peut le relire et le corriger** ; `--regenerer` le réécrit. Sans casque, il
+faut parler un peu plus fort que Kalan pour le couper (réglage : `KALAN_FACTEUR_ECHO`).
 
 Ollama doit tourner (`ollama serve`).
 
