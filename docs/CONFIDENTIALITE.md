@@ -23,6 +23,7 @@ Kalan est un logiciel libre (GNU GPL v3 ou ultérieure) : n'importe qui peut en 
 | **Le texte de ce que dit l'élève** | Répondre en tenant compte de la séance (« tu as dit quoi tout à l'heure ? ») | Mémoire vive | La durée de la séance. **Effacé à la fin**, jamais écrit sur disque. |
 | **Les images de la caméra** *(seulement si activée)* | Voir une main levée, un élève absent, fatigué ou en difficulté | Mémoire vive du navigateur, image par image | Une image est analysée puis oubliée. **Aucune image, aucune vidéo n'est enregistrée ni envoyée.** |
 | **Les signaux de la caméra** : présent, regarde l'écran, en difficulté, fatigué, trop près, pièce sombre, plusieurs élèves, et les gestes (main levée, pouce levé, pouce baissé) | Faire réagir Kalan comme un enseignant | Mémoire vive | **3 secondes** : un signal plus ancien est ignoré. Jamais écrits. |
+| **La photo du cahier** *(seulement si la caméra est allumée, et seulement quand l'élève dit « regarde mon cahier »)* | Lire l'énoncé de l'exercice pour aider l'élève | Mémoire vive de l'appareil | Une seule image, prise après un compte à rebours visible de 3 s, lue par Gemma 3n sur l'appareil puis **effacée aussitôt**. Jamais écrite, jamais envoyée. |
 | **Le contenu du cours** (chapitres, textes du cours) | Enseigner | Fichiers de l'appareil | Ce sont des contenus pédagogiques, **pas des données sur l'élève**. |
 
 Kalan **ne demande ni ne connaît** le nom, l'âge, la classe ou l'identité de l'élève.
@@ -44,7 +45,7 @@ La caméra est **facultative** et **éteinte par défaut**. Kalan fonctionne exa
 - **Interdiction par l'établissement.** Avec le réglage `KALAN_CAMERA=0`, la caméra disparaît de l'écran et Kalan ignore tout signal caméra, même s'il en recevait.
 - **Signal visible.** Quand la caméra est allumée, l'écran affiche « ● Caméra active » et un bouton **Couper**, utilisable à tout moment.
 - **Extinction automatique** à la fin du cours, quand la page est fermée, et pas d'analyse quand l'onglet est caché.
-- **Données minimales.** Seuls des signaux oui/non, dans une liste fixe, sont acceptés par Kalan ; tout autre champ (image, nom, émotion détaillée…) est rejeté.
+- **Données minimales.** Seuls des signaux oui/non, dans une liste fixe, sont acceptés par Kalan ; tout autre champ (image, nom, émotion détaillée…) est rejeté. **Seule exception : la photo du cahier**, acceptée une seule fois, et seulement si Kalan vient de la demander parce que l'élève l'a voulu (jeton à usage unique, délai de 12 s, taille limitée) ; toute autre image est refusée.
 - **Usage limité à ce que ferait un enseignant** qui lève les yeux vers la classe : répondre à une main levée, attendre un élève absent, proposer de réexpliquer, conseiller une pause ou de reculer de l'écran. Une remarque au plus par sujet et par leçon.
 - **L'expression du visage n'est pas un diagnostic.** « En difficulté » signifie seulement qu'une expression de tristesse, de colère, de peur ou de gêne a duré 3 secondes. Kalan en tire une proposition (« veux-tu que je réexplique ? »), jamais une conclusion sur l'élève.
 
@@ -55,7 +56,7 @@ La caméra est **facultative** et **éteinte par défaut**. Kalan fonctionne exa
 | Aucune ressource ni connexion hors de l'appareil | En-têtes `Content-Security-Policy` ; toutes les bibliothèques et modèles sont copiés localement |
 | Aucun autre site ne peut se connecter à Kalan | Serveur lié à `127.0.0.1` ; contrôle de l'origine des connexions WebSocket |
 | Pas de caméra sans accord | Les signaux d'une page sans accord, ou d'une autre page, sont ignorés |
-| Données minimales | Liste fermée de signaux, de type oui/non uniquement |
+| Données minimales | Liste fermée de signaux, de type oui/non uniquement ; une photo du cahier seulement sur demande (jeton à usage unique) |
 | Rien n'est écrit sur disque | Le code du serveur, du cours et de la voix n'ouvre aucun fichier en écriture (hors texte du cours) |
 | Le micro du navigateur n'est pas utilisé | `Permissions-Policy: microphone=()` ; le son est traité par Kalan, localement |
 

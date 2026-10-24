@@ -56,10 +56,14 @@ Choisis le "type" de ce qu'il a dit, puis réagis :
 - "bavardage" : salutation, remerciement, « qui es-tu », « écoute », encouragement… Réponds en une phrase
   courte et gentille. Tu es Kalan, l'assistant qui l'aide à comprendre son programme.
 - "hors_programme" : une vraie question, mais les extraits ne permettent pas d'y répondre. "segments" vide.
+- Si ce qu'a dit l'élève commence par [EXERCICE DU CAHIER], c'est l'énoncé d'un exercice qu'il te montre :
+  type "question". Ne donne pas la réponse toute faite : redis l'énoncé en une phrase simple, puis aide-le
+  à trouver lui-même, avec une question et un indice tirés des extraits.
 - "incompris" : des mots sans suite, qui n'ont pas de sens même en devinant. "segments" vide.
   Une phrase française claire n'est JAMAIS "incompris".
-N'ajoute jamais de connaissance absente des extraits. Réponds à SA question avec tes mots : ne recopie pas
-un extrait entier. Si un SCHÉMA est fourni et qu'une phrase parle d'un de ses éléments, mets son identifiant
+N'ajoute jamais de connaissance absente des extraits, ni de comparaison avec autre chose (pas de « c'est
+comme un robinet ») : seulement ce que disent les extraits. Réponds à SA question avec tes mots : ne recopie
+pas un extrait entier. Si un SCHÉMA est fourni et qu'une phrase parle d'un de ses éléments, mets son identifiant
 dans "pointe", sinon null.
 
 Exemples (extraits : « Une lampe est un récepteur : elle transforme l'énergie électrique en lumière et en chaleur. »
@@ -68,6 +72,8 @@ Exemples (extraits : « Une lampe est un récepteur : elle transforme l'énergie
   {"type": "question", "segments": [{"texte": "Dans ta leçon, on parle de l'énergie électrique : la lampe la reçoit et la transforme en lumière et en chaleur.", "pointe": "lampe"}, {"texte": "La définition complète de l'énergie, tu la verras avec ton professeur.", "pointe": null}], "sources": [1]}
 - Élève : « Tu as dit quoi sur l'interrupteur tout à l'heure ? » →
   {"type": "question", "segments": [{"texte": "J'ai dit que si l'interrupteur est ouvert, le courant ne passe plus.", "pointe": "interrupteur"}, {"texte": "Alors la lampe s'éteint.", "pointe": "lampe"}], "sources": [2]}
+- Élève : « C'est pas bien compris, c'est trop dur » (dernière phrase dite : « Lorsque l'interrupteur est ouvert, le courant ne circule plus. ») →
+  {"type": "pas_compris", "segments": [{"texte": "Je le dis autrement : si l'interrupteur est ouvert, le chemin du courant est coupé.", "pointe": "interrupteur"}, {"texte": "Le courant ne passe plus, alors la lampe s'éteint.", "pointe": "lampe"}], "sources": [2]}
 - Élève : « Qui a inventé la lampe ? » → {"type": "hors_programme", "segments": [], "sources": []}
 - Élève : « Bleu fourchette maison » → {"type": "incompris", "segments": [], "sources": []}
 
@@ -170,6 +176,9 @@ _SUITE = re.compile(r"^(oui|non|ok|okay|d accord|continue[sz]?|vas y|allez y|c e
                     r"j ai compris|compris|merci|non merci|pas de question)\b")
 _REPETE = re.compile(r"\b(repete[sz]?|repeter|redis|redire|reprends?|recommence[sz]?|encore une fois|pas entendu)\b")
 _STOP = re.compile(r"\b(arrete[sz]?|stop|on s arrete|termine|fin du cours)\b")
+_CAHIER = re.compile(r"\b(regarde[sz]?|lis|lire|lisez|montre|voir|vois)\b.*\b(cahier|exercice|devoir|feuille|probleme)s?\b")
+_PAS_COMPRIS = re.compile(r"\b(pas (bien |tout |du tout )?compris|rien compris|comprends? (rien|pas)|"
+                          r"re ?explique[sz]?|explique[sz]? (encore|autrement|mieux))\b")
 # Phrases que Whisper invente sur du bruit ou du silence (fins de vidéos YouTube).
 _HALLUCINATIONS = re.compile(r"amara|sous titr|abonnez|regarde cette video|merci d avoir regarde")
 
@@ -180,12 +189,14 @@ def _normaliser(texte: str) -> str:
 
 
 def intention(texte: str | None) -> str:
-    """Tri rapide, sans LLM : 'rien', 'stop', 'repete', 'suite' ou 'parole' (à comprendre par le LLM)."""
+    """Tri rapide, sans LLM : 'rien', 'stop', 'repete', 'suite', 'cahier' ou 'parole' (à comprendre par le LLM)."""
     t = _normaliser(texte or "")
     if not t or _HALLUCINATIONS.search(t):
         return "rien"
     if _STOP.search(t):
         return "stop"
+    if _CAHIER.search(t):
+        return "cahier"
     if len(t.split()) <= 8 and _REPETE.search(t):
         return "repete"
     if len(t.split()) <= 4 and _SUITE.match(t):
@@ -236,11 +247,15 @@ def reagir(parole: str, chapitre: str, lecon: str, derniere: str, assistant: Ass
             extraits.append(c)
     schema = schema_for(chapitre)
     historique = journal.historique() if journal else ""
+    # Un petit LLM confond parfois « je n'ai pas compris » + des mots mal transcrits avec du charabia.
+    indice = ("\nINDICE : l'élève dit qu'il n'a pas compris : c'est \"pas_compris\", réexplique autrement."
+              if _PAS_COMPRIS.search(_normaliser(parole)) else "")
     prompt = ("EXTRAITS DU PROGRAMME :\n"
               + "\n\n".join(f"[{i + 1}] ({c.citation()})\n{c.text}" for i, c in enumerate(extraits))
               + _schema_prompt(schema)
               + (f"\n\nHISTORIQUE DE LA SÉANCE :\n{historique}" if historique else "")
-              + f"\n\nLEÇON EN COURS : {lecon}\nDERNIÈRE PHRASE DITE : {derniere}\nL'ÉLÈVE A DIT : {parole}")
+              + f"\n\nLEÇON EN COURS : {lecon}\nDERNIÈRE PHRASE DITE : {derniere}\nL'ÉLÈVE A DIT : {parole}"
+              + indice)
     raw = assistant.llm(prompt, SYSTEM_CLASSE)
     try:
         data = json.loads(raw)
@@ -294,6 +309,9 @@ FATIGUE = "Tu as l'air fatigué. Si tu veux faire une pause, dis « arrête » :
 TROP_PRES = "Recule un peu de l'écran, c'est mieux pour tes yeux."
 SOMBRE = "Il fait un peu sombre. Si tu peux, allume la lumière : je te verrai mieux."
 PLUSIEURS = "Je vois que vous êtes plusieurs : bienvenue à tous ! Levez la main pour poser une question."
+CAHIER_MONTRE = "D'accord ! Montre-moi ton cahier devant la caméra, bien à plat. Je regarde dans trois secondes."
+CAHIER_ILLISIBLE = "Je n'arrive pas à bien lire. Approche ton cahier de la caméra, avec de la lumière, et redemande-moi."
+CAHIER_SANS_CAMERA = "Pour que je lise ton cahier, il faut allumer la caméra. Tu peux aussi me lire l'exercice à voix haute."
 
 
 def faire_cours(cours: Cours, assistant: Assistant, classe: Classe,
@@ -342,13 +360,32 @@ def faire_cours(cours: Cours, assistant: Assistant, classe: Classe,
                 return dire(remarque) or ecoute(pause_fin_lecon)
         return None
 
+    def regarder_cahier() -> tuple[str | None, bool]:
+        """L'élève montre son cahier (R13). Renvoie (parole, énoncé lu ?)."""
+        photographier = getattr(classe, "photographier", None)
+        prete = getattr(classe, "camera_prete", lambda: False)
+        if not photographier or not prete():
+            return dire(CAHIER_SANS_CAMERA) or ecoute(pause_fin_lecon), False
+        parole = dire(CAHIER_MONTRE)
+        if parole:
+            return parole, False
+        texte = photographier()
+        if not texte:
+            return dire(CAHIER_ILLISIBLE) or ecoute(5.0), False
+        journal.eleve(f"(montre son cahier) {texte}")
+        return f"[EXERCICE DU CAHIER] {texte}", True
+
     def echange(parole: str | None, lecon: str, derniere: str) -> str | None:
         """Réagit à l'élève jusqu'à ce qu'il laisse Kalan reprendre. Renvoie 'stop' ou 'repete' s'il le demande."""
         while True:
             action = intention(parole)
             if action in ("stop", "repete"):
                 return action
-            if action != "parole":
+            if action == "cahier":
+                parole, enonce = regarder_cahier()
+                if not enonce:
+                    continue  # l'élève a parlé entre-temps, ou rien de lisible : on l'écoute
+            elif action != "parole":
                 return None
             r = reagir(parole, cours.chapitre, lecon, derniere, assistant, journal)
             if r.type == "incompris":

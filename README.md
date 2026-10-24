@@ -4,96 +4,70 @@
 
 L'IA ne remplace pas le professeur. Elle donne à chaque élève ce que le professeur n'a pas le temps de donner : quelqu'un à qui poser une question bête, dans sa langue, sans honte devant la classe.
 
-- Cahier des charges : [docs/cahier_des_charges.md](docs/cahier_des_charges.md)
-- Décisions techniques : [docs/decisions.md](docs/decisions.md)
+## Lancer Kalan : une seule commande
 
-## Prototype ordinateur (J3–J6)
-
-```
-🎤 micro ─► Whisper (local) ─► recherche dans le programme ─► LLM local (Ollama)
-                                                                   │
-                       🔊 Piper (local) ◄── segments + élément à pointer ──► 📺 schéma
-```
-
-### Installation (une fois, avec réseau)
+**Windows** : double-cliquer sur `kalan.cmd`, ou dans un terminal ouvert dans le dossier du projet :
 
 ```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-python scripts/download_models.py
-ollama pull qwen2.5:7b
+.\kalan
 ```
 
-### Utilisation (sans réseau)
+**Linux, macOS** :
 
 ```bash
-python -m kalan.ingest data/programme --reset   # indexer les chapitres
-python -m kalan.cli                              # questions au clavier
-python -m kalan.cli --voix                       # micro : Entrée pour parler, Entrée pour finir
-python -m kalan.cli --voix --mains-libres        # micro : écoute dès qu'on parle (démo, salle calme)
-python -m kalan.cli --cours                      # Kalan fait cours ; on l'interrompt à la voix
+./kalan.sh
 ```
 
-**Écran de classe** (le mode cours, en image) :
+La commande vérifie et prépare tout, puis ouvre l'écran de classe dans le navigateur. La première fois, avec Internet, elle installe Python et les modèles (voix, transcription, recherche ≈ 1 Go ; Gemma 3n ≈ 7 Go s'il manque). Ensuite, **tout fonctionne sans Internet**. Seul prérequis : [Ollama](https://ollama.com) installé ; Kalan le démarre lui-même s'il ne tourne pas.
+
+Options : `kalan --chapitre "Chapitre 3"`, `kalan --port 9000`, `kalan --regenerer` (réécrire le texte du cours).
+
+## Ce que fait Kalan
+
+- **Il fait cours** : un avatar parle (bouche synchronisée sur la voix, bras qui pointe le tableau), la diapositive avance toute seule, les points s'allument au fil de la parole, le schéma s'éclaire sur l'élément dont il parle (R7), les sous-titres suivent la voix mot à mot.
+- **On l'interrompt quand on veut**, à la voix : il répond avec le programme et cite sa source, réexplique autrement si on n'a pas compris, se souvient de la séance (« tu as dit quoi tout à l'heure ? »), puis reprend la phrase coupée. « Répète », « continue », « arrête » sont compris. Hors programme : il refuse poliment, sans inventer.
+- **Caméra** (facultative, éteinte par défaut, accord demandé à chaque séance) :
+  - ✋ **lever la main** coupe Kalan, qui répond « Oui ? Je t'écoute » ; 👍 j'ai compris ; 👎 réexplique ;
+  - 📒 **« regarde mon cahier »** : après un compte à rebours, Kalan lit l'exercice avec Gemma 3n et aide l'élève à le résoudre, sans donner la réponse toute faite ;
+  - il voit aussi si l'élève est absent, distrait, en difficulté, fatigué, trop près de l'écran, si la pièce est sombre ou s'ils sont plusieurs, et réagit comme un enseignant.
+
+  Tout est analysé sur l'appareil ; aucune image n'est enregistrée ni envoyée. Un établissement peut interdire la caméra : `KALAN_CAMERA=0`.
+
+```
+🎤 micro ─► Whisper ─► programme indexé ─► Gemma 3n (Ollama) ─► 🔊 Piper + 📺 avatar, diapositive, schéma
+📷 caméra ─► face-api, MediaPipe (dans le navigateur) ─► signaux oui/non, gestes ─┘
+```
+
+## 🔒 Vie privée
+
+[docs/CONFIDENTIALITE.md](docs/CONFIDENTIALITE.md) — appliquée par le code et vérifiée par `tests/test_confidentialite.py` : la page ne peut rien charger ni envoyer hors de l'appareil, aucun autre site ne peut se connecter à Kalan, la caméra ne sert qu'avec un accord donné pour la séance, et rien de l'élève n'est écrit sur disque.
+
+## Autres modes (terminal)
 
 ```bash
-python -m kalan.web                              # ouvre http://localhost:8765
+.venv\Scripts\python -m kalan.cli                 # questions tapées au clavier
+.venv\Scripts\python -m kalan.cli --voix          # micro : Entrée pour parler, Entrée pour finir
+.venv\Scripts\python -m kalan.cli --cours         # le cours, sans écran
 ```
 
-Kalan apparaît sous forme d'avatar qui parle (bouche synchronisée sur la voix, bras qui pointe le
-tableau). La diapositive avance toute seule avec le cours, les points s'allument au fil de la parole,
-le schéma s'éclaire sur l'élément dont Kalan parle (R7), les sous-titres suivent la voix mot à mot.
-Option **caméra** (éteinte par défaut, accord demandé à chaque séance) : **lever la main** coupe
-Kalan, qui répond « Oui ? Je t'écoute » ; **pouce levé** = j'ai compris, **pouce baissé** = réexplique.
-Kalan voit aussi si l'élève est absent, distrait, en difficulté, fatigué, trop près de l'écran, si
-la pièce est trop sombre ou si plusieurs élèves sont là. Tout est calculé dans le navigateur avec des
-modèles locaux (face-api, MediaPipe). Aucune image n'est enregistrée ni envoyée, et la page ne peut
-techniquement rien charger hors de l'appareil. Un établissement peut interdire la caméra :
-`KALAN_CAMERA=0`.
+## Programme et contenus
 
-🔒 **Vie privée : [docs/CONFIDENTIALITE.md](docs/CONFIDENTIALITE.md)**, appliquée par le code et
-vérifiée par `tests/test_confidentialite.py`.
+- Ajouter un chapitre officiel (PDF) : `.venv\Scripts\python -m kalan.ingest manuel_ch3.pdf --chapitre "Chapitre 3 — Le circuit électrique simple" --premiere-page 40`
+- Le texte oral de chaque cours est écrit une fois par le LLM et gardé dans `data/cours/*.json` : **un enseignant doit le relire et le corriger** avant la classe.
+- ⚠️ Le chapitre de `data/programme/` est un **exemple**, pas un extrait officiel.
 
-## Licence
-
-Kalan est un **logiciel libre** : © 2026 Lamine SACKO, publié sous la **licence GNU GPL version 3
-ou ultérieure** ([LICENSE](LICENSE)). Vous pouvez l'utiliser, l'étudier, le modifier et le
-redistribuer, sous la même licence. Il est fourni **sans aucune garantie**.
-
-Le **nom « Kalan »** est réservé aux versions qui respectent la politique de confidentialité :
-[docs/MARQUE.md](docs/MARQUE.md). Composants tiers et leurs licences : [docs/TIERS.md](docs/TIERS.md). Pour ajouter une fonctionnalité : un nouvel évènement dans `kalan/web.py`
-et un module dans `web/` (voir `GESTES` dans `web/app.js`).
-
-**Mode cours.** Kalan déroule le chapitre leçon par leçon, en pointant le schéma, et laisse
-une courte pause après chaque phrase. L'élève peut parler à tout moment, même pendant que
-Kalan parle : Kalan s'arrête, répond (réponse ancrée et citée), dit « On reprend » et redit la
-phrase coupée. « Répète », « continue » et « arrête » sont compris.
-
-Le texte oral du cours est écrit une fois par le LLM et gardé dans `data/cours/*.json` :
-**un enseignant peut le relire et le corriger** ; `--regenerer` le réécrit. Sans casque, il
-faut parler un peu plus fort que Kalan pour le couper (réglage : `KALAN_FACTEUR_ECHO`).
-
-Ollama doit tourner (`ollama serve`).
-
-Ajouter un chapitre officiel en PDF :
-
-```bash
-python -m kalan.ingest manuel_ch3.pdf --chapitre "Chapitre 3 — Le circuit électrique simple" --premiere-page 40
-```
-
-### Tests
-
-```bash
-pytest
-```
-
-## Structure
+## Pour les développeurs
 
 | Dossier | Contenu |
 |---|---|
-| `kalan/` | Pipeline : découpage, index, assistant, voix, CLI |
-| `data/programme/` | Chapitres du programme (Markdown ou PDF). ⚠️ Le chapitre actuel est un **exemple**, pas un extrait officiel |
-| `data/schemas/` | Schémas SVG pointables + manifestes JSON (R7) |
-| `models/` | Modèles téléchargés (non versionnés) |
-| `docs/` | Cahier des charges, décisions |
+| `kalan/` | Découpage, index, assistant, cours, voix, serveur de l'écran, lanceur |
+| `web/` | Écran de classe : avatar, tableau, caméra (`web/vendor/` : bibliothèques tierces locales) |
+| `data/` | Programme, schémas pointables, textes de cours |
+| `docs/` | Cahier des charges, décisions, confidentialité, licences |
+| `tests/` | `pytest` |
+
+Ajouter une fonctionnalité à l'écran : un nouvel évènement dans `kalan/web.py` et un module dans `web/` (voir `GESTES` dans `web/app.js`). Décisions techniques : [docs/decisions.md](docs/decisions.md). Cahier des charges : [docs/cahier_des_charges.md](docs/cahier_des_charges.md).
+
+## Licence
+
+Kalan est un **logiciel libre** : © 2026 Lamine SACKO, sous **licence GNU GPL version 3 ou ultérieure** ([LICENSE](LICENSE)), fourni **sans aucune garantie**. Le **nom « Kalan »** est réservé aux versions qui respectent la politique de confidentialité ([docs/MARQUE.md](docs/MARQUE.md)). Composants tiers : [docs/TIERS.md](docs/TIERS.md).

@@ -37,7 +37,8 @@ export class Camera {
   get active() { return Boolean(this.flux); }
 
   async demarrer() {
-    this.flux = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 }, audio: false });
+    // 640×480 : assez net pour lire un cahier ; l'analyse du visage travaille sur une version réduite.
+    this.flux = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
     this.video.srcObject = this.flux;
     await this.chargerModeles();
     let n = 0;
@@ -73,6 +74,16 @@ export class Camera {
         this.afficher("sig-geste", "Gestes : indisponibles", false);
       }
     }
+  }
+
+  /** Une seule image du cahier, en JPEG, uniquement quand Kalan la demande (R13). */
+  photo() {
+    if (!this.active || this.video.readyState < 2) return null;
+    const c = document.createElement("canvas");
+    c.width = 640;
+    c.height = 480;
+    c.getContext("2d").drawImage(this.video, 0, 0, 640, 480);
+    return c.toDataURL("image/jpeg", 0.85);
   }
 
   arreter() {
@@ -144,22 +155,25 @@ export class Camera {
 
   analyserMains() {
     if (!this.gestes || this.video.readyState < 2) return;
-    const r = this.gestes.recognizeForVideo(this.video, performance.now());
-    let nom = null;
-    r.gestures.forEach((g, i) => {
-      const cat = g[0];
-      if (!cat || cat.score < 0.6) return;
-      const poignet = r.landmarks[i][0];
-      if ((cat.categoryName === "Open_Palm" || cat.categoryName === "Pointing_Up") && poignet.y < 0.55) nom = "main_levee";
-      else if (cat.categoryName === "Thumb_Up") nom ??= "pouce_haut";
-      else if (cat.categoryName === "Thumb_Down") nom ??= "pouce_bas";
-    });
+    let r;
+    try {
+      r = this.gestes.recognizeForVideo(this.video, performance.now());
+    } catch (e) {
+      // Ne jamais échouer en silence : l'élève doit voir que les gestes ne marchent pas.
+      console.warn("Gestes :", e);
+      this.afficher("sig-geste", "Gestes : erreur", true);
+      return;
+    }
+    const { nom, vu } = lireGeste(r);
     this.candidat = nom === this.candidat.nom ? { nom, n: this.candidat.n + 1 } : { nom, n: 1 };
     const maintenant = performance.now();
     if (nom && this.candidat.n === GESTE_STABLE && maintenant - this.dernierGeste > GESTE_PAUSE_MS) {
       this.dernierGeste = maintenant;
-      this.afficher("sig-geste", NOMS_GESTES[nom], false);
+      this.afficher("sig-geste", NOMS_GESTES[nom] + " ✓", false);
       this.envoyerGeste(nom);
+    } else if (maintenant - this.dernierGeste > 1500) {
+      // Retour en direct : ce que la caméra voit des mains, même sans geste reconnu.
+      this.afficher("sig-geste", vu, false);
     }
   }
 
@@ -172,6 +186,31 @@ export class Camera {
 }
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const BOUTS_DES_DOIGTS = [8, 12, 16, 20];
+
+/**
+ * Lit les mains vues par MediaPipe. Main levée : main droite (doigts au-dessus du poignet)
+ * et haute dans l'image, quelle que soit sa forme (paume, un doigt, deux doigts…) ; avec
+ * une webcam de portable, le poignet d'une main levée est souvent bas, voire hors champ.
+ * Les pouces passent après la main levée, poing fermé exclu.
+ */
+export function lireGeste(r) {
+  let nom = null;
+  const vus = [];
+  r.gestures.forEach((g, i) => {
+    const cat = g[0];
+    const lm = r.landmarks[i];
+    if (!cat || !lm) return;
+    const poignet = lm[0];
+    const haut = Math.min(...BOUTS_DES_DOIGTS.map((k) => lm[k].y));
+    const droite = poignet.y - haut > 0.08;
+    vus.push(cat.categoryName === "None" ? "main" : cat.categoryName);
+    if (cat.categoryName === "Thumb_Up" && cat.score >= 0.5) nom ??= "pouce_haut";
+    else if (cat.categoryName === "Thumb_Down" && cat.score >= 0.5) nom ??= "pouce_bas";
+    else if (cat.categoryName !== "Closed_Fist" && droite && haut < 0.5) nom = "main_levee";
+  });
+  return { nom, vu: vus.length ? "Main vue : " + vus.join(", ") : "Gestes : aucune main vue" };
+}
 
 /** La tête est-elle tournée vers l'écran ? Nez centré entre les yeux, ni trop haut ni trop bas. */
 function regardeEcran(p) {

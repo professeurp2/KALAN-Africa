@@ -106,3 +106,35 @@ def test_rien_de_la_camera_n_est_ecrit_sur_disque():
         assert "write_bytes" not in code, f
     # La seule écriture de cours.py est le texte du cours (contenu pédagogique, pas l'élève).
     assert (ROOT / "kalan" / "cours.py").read_text(encoding="utf-8").count("write_text") == 1
+
+
+IMAGE = "data:image/jpeg;base64," + "A" * 100
+
+
+def test_photo_non_demandee_refusee(classe):
+    classe.donner_consentement(PAGE)
+    assert not classe.recevoir_photo(PAGE, "nimporte", IMAGE)
+    assert classe._photo is None
+
+
+def test_seule_la_photo_demandee_est_acceptee_une_fois(classe):
+    classe.donner_consentement(PAGE)
+    classe._photo_attendue = "jeton-secret"
+    assert not classe.recevoir_photo(PAGE, "mauvais-jeton", IMAGE)
+    assert not classe.recevoir_photo(AUTRE_PAGE, "jeton-secret", IMAGE)
+    assert not classe.recevoir_photo(PAGE, "jeton-secret", "data:image/png;base64,AAAA")
+    assert not classe.recevoir_photo(PAGE, "jeton-secret", IMAGE + "A" * web.TAILLE_MAX_PHOTO)
+    assert classe.recevoir_photo(PAGE, "jeton-secret", IMAGE)
+    assert not classe.recevoir_photo(PAGE, "jeton-secret", IMAGE)  # jeton à usage unique
+
+
+def test_pas_de_photo_sans_camera_prete(classe):
+    assert classe.photographier() is None  # pas d'accord : rien n'est demandé à la page
+    assert not [e for e in classe.d.evenements if e[0] == "capture"]
+
+
+def test_retirer_l_accord_annule_la_photo_attendue(classe):
+    classe.donner_consentement(PAGE)
+    classe._photo_attendue = "jeton"
+    classe.retirer_consentement()
+    assert not classe.recevoir_photo(PAGE, "jeton", IMAGE)

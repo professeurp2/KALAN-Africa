@@ -79,6 +79,23 @@ def parse_llm(raw: str, hits: list[Hit], schema: Schema | None) -> Reponse:
     return Reponse(segments, citations, schema if any(s.pointe for s in segments) else None)
 
 
+LIRE_CAHIER = ("Recopie exactement le texte écrit sur cette page (énoncé d'exercice d'un élève). "
+               "N'ajoute rien, ne résous rien. Si aucun texte n'est lisible, réponds seulement : RIEN")
+
+
+def lire_image(jpeg_base64: str) -> str:
+    """Gemma 3n lit la photo du cahier. L'image n'est passée qu'en mémoire, jamais écrite."""
+    r = requests.post(f"{config.OLLAMA_URL}/api/chat", timeout=120, json={
+        "model": config.LLM_MODEL,
+        "stream": False,
+        "options": {"temperature": 0},
+        "messages": [{"role": "user", "content": LIRE_CAHIER, "images": [jpeg_base64]}],
+    })
+    r.raise_for_status()
+    texte = r.json()["message"]["content"].strip()
+    return "" if texte.upper().startswith("RIEN") else texte
+
+
 def ask_llm(prompt: str, system: str = SYSTEM) -> str:
     r = requests.post(f"{config.OLLAMA_URL}/api/chat", timeout=120, json={
         "model": config.LLM_MODEL,

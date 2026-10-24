@@ -225,6 +225,9 @@ button { font: inherit; cursor: pointer; }
 .mentions { font-size: .7rem; color: var(--encre-douce); margin: 14px 0 0; padding-top: 10px; border-top: 1px dashed var(--trait); line-height: 1.45; }
 .mentions a { color: var(--indigo); }
 
+.compte-a-rebours { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 15;
+  font-size: 5rem; font-weight: 800; color: var(--indigo); background: var(--papier); border: 6px solid var(--ocre);
+  border-radius: 28px; padding: 18px 40px; box-shadow: 0 20px 60px rgba(0, 0, 0, .3); }
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--encre); color: #fff;
   padding: 10px 18px; border-radius: 10px; font-size: .9rem; z-index: 20; max-width: calc(100% - 32px); }
 

@@ -30,9 +30,12 @@ TOP_K = 4
 MIN_SIMILARITY = 0.35
 
 # --- LLM local ---
-# Prototype ordinateur : Ollama. Cible tablette : Gemma 3n via LiteRT.
+# Gemma 3n (cahier des charges §6) : texte et images, conçu pour l'embarqué. Sur ordinateur via
+# Ollama ; sur tablette via LiteRT. Le même modèle lit le cahier montré à la caméra (R13).
+# Comparé à qwen2.5:7b le 24 oct. 2026 sur les phrases réelles des essais : qualité proche,
+# même vitesse (1 à 2 s). Autre modèle possible : KALAN_LLM=qwen2.5:7b (texte seulement).
 OLLAMA_URL = os.environ.get("KALAN_OLLAMA_URL", "http://127.0.0.1:11434")
-LLM_MODEL = os.environ.get("KALAN_LLM", "qwen2.5:7b")
+LLM_MODEL = os.environ.get("KALAN_LLM", "gemma3n")
 
 # --- Voix ---
 WHISPER_MODEL = os.environ.get("KALAN_WHISPER", "small")

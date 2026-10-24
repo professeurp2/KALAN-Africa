@@ -85,6 +85,19 @@ const GESTES = {
     bulleMinuterie = setTimeout(() => (b.hidden = true), 12000);
   },
   source: (m) => tableau.source(m.texte),
+  async capture(m) {
+    // Compte à rebours visible : l'élève sait exactement quand la photo est prise.
+    const ecran = $("compte-a-rebours");
+    ecran.hidden = false;
+    for (let s = m.delai; s > 0; s--) {
+      ecran.textContent = `📷 ${s}`;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    ecran.textContent = "📷";
+    const image = camera.photo();
+    setTimeout(() => (ecran.hidden = true), 400);
+    if (image) envoyer({ type: "photo", jeton: m.jeton, image });
+  },
   fin() {
     avatar.etat("pret");
     basculerCamera(false); // l'accord valait pour cette séance
@@ -104,11 +117,16 @@ function connecter() {
     const m = JSON.parse(e.data);
     GESTES[m.type]?.(m);
   };
-  ws.onopen = () => camera.active && envoyer({ type: "consentement_camera", accord: true });
+  ws.onopen = () => {
+    connecter.attente = 1000;
+    if (camera.active) envoyer({ type: "consentement_camera", accord: true });
+  };
   ws.onclose = () => {
     $("commencer").disabled = true;
     $("commencer").textContent = "Connexion à Kalan…";
-    setTimeout(connecter, 1500);
+    // Kalan arrêté : on réessaie de plus en plus rarement (jusqu'à toutes les 15 s).
+    connecter.attente = Math.min(15000, (connecter.attente || 1000) * 1.5);
+    setTimeout(connecter, connecter.attente);
   };
 }
 

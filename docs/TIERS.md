@@ -34,9 +34,9 @@ Kalan est publié sous **GNU GPL version 3 ou ultérieure** (`LICENSE`). Tous le
 |---|---|---|---|
 | Whisper `small` (OpenAI, via faster-whisper) | Transcription de la voix | MIT | |
 | paraphrase-multilingual-MiniLM-L12-v2 | Recherche dans le programme | Apache-2.0 | |
-| Qwen2.5-7B (via Ollama) | LLM du prototype ordinateur | Apache-2.0 | |
+| Qwen2.5-7B (via Ollama, facultatif : `KALAN_LLM=qwen2.5:7b`) | LLM de remplacement, texte seulement | Apache-2.0 | |
 | Voix Piper **fr_FR-siwis-medium** | Voix française | Selon le corpus SIWIS | ⚠️ **À vérifier** avant distribution (mention de l'auteur, usage commercial) |
-| Gemma 3n *(cible tablette)* | LLM embarqué | Conditions d'utilisation Gemma | ⚠️ Pas une licence libre. Un modèle est un fichier séparé de Kalan, ce qui n'empêche pas la GPL ; mais une tablette livrée avec Gemma doit respecter ses conditions (dont sa politique d'usage interdit). |
+| **Gemma 3n** (via Ollama ; LiteRT sur tablette) | **LLM par défaut** : cours, réponses, lecture du cahier | Conditions d'utilisation Gemma | ⚠️ Pas une licence libre. Un modèle est un fichier séparé de Kalan, ce qui n'empêche pas la GPL ; mais une tablette livrée avec Gemma doit respecter ses conditions (dont sa politique d'usage interdit). |
 
 ## Contenus
 

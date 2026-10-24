@@ -188,3 +188,39 @@ def test_generer_un_cours_par_lecon(tmp_path):
 
 def test_parse_segments_json_invalide():
     assert parse_segments("pas du json", None) == []
+
+
+def test_intention_cahier():
+    assert intention("Regarde mon cahier") == "cahier"
+    assert intention("Tu peux lire mon exercice ?") == "cahier"
+    assert intention("Regarde l'écran") == "parole"
+
+
+class EleveCamera(Eleve):
+    def __init__(self, lu, **kw):
+        super().__init__(**kw)
+        self.lu = lu
+
+    def camera_prete(self):
+        return True
+
+    def photographier(self):
+        return self.lu
+
+
+def test_regarde_mon_cahier(tmp_path):
+    from kalan.cours import CAHIER_MONTRE
+    a = make_assistant(tmp_path, [{"type": "question", "sources": [1],
+                                   "segments": [{"texte": "Ton exercice parle d'un circuit. À ton avis ?"}]}])
+    e = EleveCamera("Pourquoi la lampe ne brille pas ?", apres={3: "Regarde mon cahier"})
+    faire_cours(COURS, a, e, rng=RNG())
+    assert e.dit[3] == CAHIER_MONTRE and e.dit[4] == "Ton exercice parle d'un circuit. À ton avis ?"
+    assert "L'ÉLÈVE A DIT : [EXERCICE DU CAHIER] Pourquoi la lampe ne brille pas ?" in a.prompts[0]
+
+
+def test_cahier_sans_camera(tmp_path):
+    from kalan.cours import CAHIER_SANS_CAMERA
+    a = make_assistant(tmp_path, [])
+    e = Eleve(apres={3: "Lis mon exercice"})
+    faire_cours(COURS, a, e, rng=RNG())
+    assert e.dit[3] == CAHIER_SANS_CAMERA and a.prompts == []

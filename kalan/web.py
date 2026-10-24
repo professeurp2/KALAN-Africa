@@ -24,6 +24,7 @@ import asyncio
 import json
 import mimetypes
 import os
+import secrets
 import threading
 import time
 import webbrowser
@@ -43,6 +44,7 @@ TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=u
          ".bin": "application/octet-stream", ".task": "application/octet-stream", ".png": "image/png"}
 
 CHAMPS_OBSERVATION = {f.name for f in fields(Observation)}
+TAILLE_MAX_PHOTO = 600_000  # une image JPEG 640×480, encodée en base64
 GESTES = {"main_levee", "pouce_haut", "pouce_bas"}
 OUI = "Oui ? Je t'écoute."
 
@@ -93,6 +95,9 @@ class ClasseWeb(ClasseVocale):
         self.obs, self.obs_t = Observation(), 0.0
         self.consentement = None  # la page qui a donné l'accord caméra pour cette séance
         self._geste: tuple[str, float] | None = None
+        self._photo_attendue: str | None = None  # jeton à usage unique : seule la photo demandée est acceptée
+        self._photo: str | None = None
+        self._photo_recue = threading.Event()
 
     # --- Caméra : rien sans consentement ---
 
@@ -102,6 +107,45 @@ class ClasseWeb(ClasseVocale):
     def retirer_consentement(self):
         self.consentement = None
         self.obs, self.obs_t, self._geste = Observation(), 0.0, None
+        self._photo_attendue = self._photo = None
+
+    # --- « Regarde mon cahier » (R13) : une photo, à la demande de l'élève, lue en mémoire ---
+
+    def camera_prete(self) -> bool:
+        return bool(config.CAMERA_AUTORISEE and self.consentement and time.time() - self.obs_t < 3)
+
+    def photographier(self) -> str | None:
+        """Demande UNE image à la page (après un compte à rebours visible), la fait lire, l'oublie."""
+        from .assistant import lire_image
+
+        if not self.camera_prete():
+            return None
+        self._photo, self._photo_attendue = None, secrets.token_urlsafe(12)
+        self._photo_recue.clear()
+        self.d.emettre("capture", jeton=self._photo_attendue, delai=3)
+        recue = self._photo_recue.wait(12)
+        image, self._photo, self._photo_attendue = self._photo, None, None
+        if not recue or not image:
+            return None
+        try:
+            texte = lire_image(image)
+        finally:
+            del image  # l'image n'existe qu'ici, le temps de la lecture
+        if texte:
+            self.d.emettre("eleve", texte="📷 " + texte)
+        return texte or None
+
+    def recevoir_photo(self, page, jeton, image) -> bool:
+        """N'accepte que la photo demandée, par la page qui a donné l'accord, une seule fois."""
+        if not (config.CAMERA_AUTORISEE and page is self.consentement and self._photo_attendue
+                and isinstance(jeton, str) and secrets.compare_digest(jeton, self._photo_attendue)
+                and isinstance(image, str) and image.startswith("data:image/jpeg;base64,")
+                and len(image) <= TAILLE_MAX_PHOTO):
+            return False
+        self._photo_attendue = None
+        self._photo = image.split(",", 1)[1]
+        self._photo_recue.set()
+        return True
 
     def recevoir_observation(self, page, msg: dict):
         if config.CAMERA_AUTORISEE and page is self.consentement:
@@ -222,13 +266,15 @@ async def servir(args, preparer):
                     classe.recevoir_observation(ws, msg)
                 elif type_ == "geste":
                     classe.recevoir_geste(ws, msg.get("nom"))
+                elif type_ == "photo":
+                    classe.recevoir_photo(ws, msg.get("jeton"), msg.get("image"))
         finally:
             d.clients.discard(ws)
             if classe.consentement is ws:  # page fermée : l'accord ne survit pas à la page
                 classe.retirer_consentement()
 
     origines = [f"http://localhost:{args.port}", f"http://127.0.0.1:{args.port}"]
-    async with serve(page, "127.0.0.1", args.port, process_request=routes, origins=origines, max_size=2 ** 16):
+    async with serve(page, "127.0.0.1", args.port, process_request=routes, origins=origines, max_size=TAILLE_MAX_PHOTO + 1024):
         url = f"http://localhost:{args.port}/"
         print(f"\nÉcran de classe prêt : {url}  (Ctrl+C pour quitter)")
         if not config.CAMERA_AUTORISEE:
