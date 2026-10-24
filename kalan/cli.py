@@ -47,6 +47,8 @@ def main(argv=None):
             print()
             return
         if not question.strip():
+            if listen:
+                print("🤷 Je n'ai rien entendu. Rapproche-toi du micro et réessaie.\n")
             continue
         if listen:
             print(f"❓ {question}")

@@ -29,7 +29,8 @@ def load_embedder() -> Embedder:
     from sentence_transformers import SentenceTransformer
 
     model = SentenceTransformer(config.EMBEDDING_MODEL, cache_folder=str(config.MODELS_DIR / "hf"))
-    if model.get_sentence_embedding_dimension() != config.EMBEDDING_DIM:
+    dim = getattr(model, "get_embedding_dimension", model.get_sentence_embedding_dimension)()
+    if dim != config.EMBEDDING_DIM:
         raise RuntimeError("Le modèle d'embedding ne correspond pas à EMBEDDING_DIM.")
     return lambda texts: model.encode(list(texts), normalize_embeddings=True, convert_to_numpy=True)
 
