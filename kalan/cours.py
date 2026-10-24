@@ -93,6 +93,7 @@ CLAIR = ["Est-ce que c'est clair ? Si tu as une question, c'est le moment.",
          "Tu as bien suivi ? Pose-moi une question si quelque chose n'est pas clair.",
          "Ça va jusque-là ? Je t'écoute si tu veux que je réexplique quelque chose."]
 AU_REVOIR = "D'accord, on s'arrête là. À bientôt !"
+PANNE = "Pardon, je n'ai pas réussi à préparer ma réponse. Repose ta question, ou demande à ton professeur."
 FIN = "C'est la fin du chapitre. Bravo, tu as bien travaillé !"
 
 
@@ -387,8 +388,14 @@ def faire_cours(cours: Cours, assistant: Assistant, classe: Classe,
                     continue  # l'élève a parlé entre-temps, ou rien de lisible : on l'écoute
             elif action != "parole":
                 return None
-            r = reagir(parole, cours.chapitre, lecon, derniere, assistant, journal)
-            if r.type == "incompris":
+            try:
+                r = reagir(parole, cours.chapitre, lecon, derniere, assistant, journal)
+            except Exception as e:  # noqa: BLE001 — une panne ne doit pas arrêter le cours
+                print(f"Erreur en répondant à « {parole} » : {e!r}")
+                r = Reaction("panne", Reponse([]))
+            if r.type == "panne":
+                segments = [Segment(PANNE)]
+            elif r.type == "incompris":
                 segments = [Segment(rng.choice(INCOMPRIS))]
             elif r.type == "hors_programme":
                 segments = [Segment(rng.choice(REFUS))]

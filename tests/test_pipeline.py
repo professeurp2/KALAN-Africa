@@ -90,3 +90,21 @@ def test_enveloppe_pour_la_bouche_de_l_avatar():
     env = enveloppe(pcm, rate, pas_s=0.1)
     assert len(env) == 10 and max(env) == 1.0
     assert env[0] == 0 and env[-1] == 1.0
+
+
+def test_index_utilisable_depuis_un_autre_fil(tmp_path):
+    """Bug du 24 oct. : l'écran de classe crée l'index dans un fil et fait cours dans un autre."""
+    import threading
+    idx = make_index(tmp_path, write_chapter(tmp_path))
+    erreurs = []
+
+    def chercher():
+        try:
+            idx.search(fake_embed(["lampe"])[0])
+            idx.chunks()
+        except Exception as e:  # noqa: BLE001
+            erreurs.append(e)
+    fil = threading.Thread(target=chercher)
+    fil.start()
+    fil.join()
+    assert not erreurs, erreurs

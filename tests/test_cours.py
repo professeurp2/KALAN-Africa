@@ -224,3 +224,15 @@ def test_cahier_sans_camera(tmp_path):
     e = Eleve(apres={3: "Lis mon exercice"})
     faire_cours(COURS, a, e, rng=RNG())
     assert e.dit[3] == CAHIER_SANS_CAMERA and a.prompts == []
+
+
+def test_une_panne_n_arrete_pas_le_cours(tmp_path):
+    from kalan.cours import PANNE
+    a = make_assistant(tmp_path, [])
+
+    def panne(prompt, system=None):
+        raise ConnectionError("Ollama arrêté")
+    a.llm = panne
+    e = Eleve(apres={3: "Rappelle-moi le circuit fermé"})
+    faire_cours(COURS, a, e, rng=RNG())
+    assert e.dit[3] == PANNE and "C." in e.dit and e.dit[-1].startswith("C'est la fin")

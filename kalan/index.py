@@ -8,6 +8,7 @@ recherche exhaustive en numpy suffit et ne demande aucune extension SQLite.
 from __future__ import annotations
 
 import sqlite3
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Sequence
@@ -41,7 +42,10 @@ class Index:
     def __init__(self, path: Path = config.INDEX_PATH,
                  model: str = config.EMBEDDING_MODEL, dim: int = config.EMBEDDING_DIM):
         path.parent.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(path)
+        # L'écran de classe ouvre l'index dans un fil et fait cours dans un autre :
+        # connexion partagée entre fils, protégée par un verrou.
+        self.db = sqlite3.connect(path, check_same_thread=False)
+        self._verrou = threading.RLock()
         self.model, self.dim = model, dim
         self.db.executescript(
             """
@@ -54,46 +58,58 @@ class Index:
         self._check_meta()
         self._cache: tuple[np.ndarray, list[int]] | None = None
 
-    def _check_meta(self):
-        stored = dict(self.db.execute("SELECT key, value FROM meta"))
-        if not stored:
-            self.db.executemany("INSERT INTO meta VALUES (?, ?)",
-                                [("embedding_model", self.model), ("embedding_dim", str(self.dim))])
+    def _executer(self, sql: str, params=()):
+        with self._verrou:
+            return self.db.execute(sql, params).fetchall()
+
+    def _executer_plusieurs(self, sql: str, lignes):
+        with self._verrou:
+            self.db.executemany(sql, lignes)
+
+    def _valider(self):
+        with self._verrou:
             self.db.commit()
+
+    def _check_meta(self):
+        stored = dict(self._executer("SELECT key, value FROM meta"))
+        if not stored:
+            self._executer_plusieurs("INSERT INTO meta VALUES (?, ?)",
+                                     [("embedding_model", self.model), ("embedding_dim", str(self.dim))])
+            self._valider()
         elif stored.get("embedding_model") != self.model or stored.get("embedding_dim") != str(self.dim):
             raise RuntimeError(
                 f"Index construit avec {stored.get('embedding_model')} ({stored.get('embedding_dim')}) : "
                 "réindexer avec `python -m kalan.ingest --reset`.")
 
     def reset_source(self, source: str):
-        self.db.execute("DELETE FROM chunks WHERE source = ?", (source,))
-        self.db.commit()
+        self._executer("DELETE FROM chunks WHERE source = ?", (source,))
+        self._valider()
         self._cache = None
 
     def add(self, chunks: list[Chunk], vectors: np.ndarray):
         assert vectors.shape == (len(chunks), self.dim)
-        self.db.executemany(
+        self._executer_plusieurs(
             "INSERT INTO chunks (source, chapitre, lecon, page, text, vec) VALUES (?, ?, ?, ?, ?, ?)",
             [(c.source, c.chapitre, c.lecon, c.page, c.text, v.astype(np.float32).tobytes())
              for c, v in zip(chunks, vectors)])
-        self.db.commit()
+        self._valider()
         self._cache = None
 
     def count(self) -> int:
-        return self.db.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
+        return self._executer("SELECT COUNT(*) FROM chunks")[0][0]
 
     def chunks(self) -> list[Chunk]:
         """Tous les passages, dans l'ordre du manuel."""
-        rows = self.db.execute("SELECT source, chapitre, lecon, page, text FROM chunks ORDER BY id").fetchall()
+        rows = self._executer("SELECT source, chapitre, lecon, page, text FROM chunks ORDER BY id")
         return [Chunk(*r) for r in rows]
 
     def titres(self) -> list[str]:
-        rows = self.db.execute("SELECT DISTINCT chapitre, lecon FROM chunks ORDER BY id").fetchall()
+        rows = self._executer("SELECT DISTINCT chapitre, lecon FROM chunks ORDER BY id")
         return list(dict.fromkeys(t for r in rows for t in r if t))
 
     def _matrix(self):
         if self._cache is None:
-            rows = self.db.execute("SELECT id, vec FROM chunks").fetchall()
+            rows = self._executer("SELECT id, vec FROM chunks")
             ids = [r[0] for r in rows]
             mat = (np.stack([np.frombuffer(r[1], dtype=np.float32) for r in rows])
                    if rows else np.zeros((0, self.dim), dtype=np.float32))
@@ -101,9 +117,8 @@ class Index:
         return self._cache
 
     def get(self, chunk_id: int) -> Chunk:
-        r = self.db.execute("SELECT source, chapitre, lecon, page, text FROM chunks WHERE id = ?",
-                            (chunk_id,)).fetchone()
-        return Chunk(*r)
+        r = self._executer("SELECT source, chapitre, lecon, page, text FROM chunks WHERE id = ?", (chunk_id,))
+        return Chunk(*r[0])
 
     def search(self, query_vec: np.ndarray, k: int = config.TOP_K) -> list[Hit]:
         mat, ids = self._matrix()
