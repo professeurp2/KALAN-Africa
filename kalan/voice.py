@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Entrée et sortie vocales locales.
 
 STT : faster-whisper. TTS : Piper. L'audio de l'élève reste en mémoire et n'est

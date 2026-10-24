@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Lamine SACKO
 // Observation de l'élève par la caméra, comme un enseignant qui lève les yeux vers lui.
 // Tout est calculé dans ce navigateur, avec des modèles copiés sur l'appareil (face-api,
 // MediaPipe). Aucune image n'est enregistrée ni envoyée : seuls des signaux oui/non partent

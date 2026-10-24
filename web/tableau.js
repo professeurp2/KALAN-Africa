@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Lamine SACKO
 // La diapositive : elle avance toute seule avec le cours. Les points apparaissent au fil
 // de la parole et le schéma s'allume sur l'élément dont Kalan parle (R7).
 

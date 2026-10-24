@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Schémas pointables (R7).
 
 Un schéma = un SVG dont certains éléments portent un id, plus un manifeste JSON

@@ -6,6 +6,10 @@ Kalan est un assistant pédagogique qui fonctionne **entièrement sur l'appareil
 
 ---
 
+## Logiciel libre : à quoi s'engage le nom « Kalan »
+
+Kalan est un logiciel libre (GNU GPL v3 ou ultérieure) : n'importe qui peut en modifier le code. Cette politique s'applique à la version officielle et à **toute version qui porte le nom « Kalan »** : une version qui ne la respecte pas n'a pas le droit de s'appeler Kalan ([docs/MARQUE.md](MARQUE.md)). Établissements et familles : vérifiez que la version installée vient du dépôt officiel.
+
 ## 1. Qui est responsable
 
 - **L'établissement scolaire** qui installe Kalan est responsable du traitement : il décide de l'utiliser, de permettre ou non la caméra, et recueille les accords des familles.

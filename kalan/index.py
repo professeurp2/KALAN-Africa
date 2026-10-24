@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Index vectoriel local : un seul fichier SQLite, recherche cosinus en numpy.
 
 À l'échelle d'un programme scolaire (quelques milliers de passages), une

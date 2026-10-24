@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Copyright (C) 2026 Lamine SACKO */
 /* Kalan — écran de classe. Couleurs du bogolan : indigo, ocre, argile, crème. */
 :root {
   --indigo: #23315c;
@@ -220,6 +222,8 @@ button { font: inherit; cursor: pointer; }
 .commencer:active:not(:disabled) { transform: scale(.98); }
 .commencer:disabled { background: #9aa1b5; cursor: wait; }
 .aide { font-size: .82rem; color: var(--encre-douce); margin: 14px 0 0; }
+.mentions { font-size: .7rem; color: var(--encre-douce); margin: 14px 0 0; padding-top: 10px; border-top: 1px dashed var(--trait); line-height: 1.45; }
+.mentions a { color: var(--indigo); }
 
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--encre); color: #fff;
   padding: 10px 18px; border-radius: 10px; font-size: .9rem; z-index: 20; max-width: calc(100% - 32px); }

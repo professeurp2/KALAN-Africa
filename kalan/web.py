@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Écran de classe : Kalan fait cours dans une page web locale.
 
     python -m kalan.web                 # ouvre http://localhost:8765
@@ -167,7 +169,8 @@ def _reponse_fichier(connection, base: Path, rel: str, entetes: list[tuple[str, 
     if not chemin.is_relative_to(base.resolve()) or not chemin.is_file():
         return connection.respond(404, "Introuvable\n")
     corps = chemin.read_bytes()
-    type_ = TYPES.get(chemin.suffix) or mimetypes.guess_type(chemin.name)[0] or "application/octet-stream"
+    type_ = (TYPES.get(chemin.suffix) or mimetypes.guess_type(chemin.name)[0]
+             or ("text/plain; charset=utf-8" if not chemin.suffix else "application/octet-stream"))
     return Response(200, "OK", Headers([("Content-Type", type_), ("Content-Length", str(len(corps)))] + entetes),
                     corps)
 
@@ -188,6 +191,8 @@ async def servir(args, preparer):
             return None  # poignée de main WebSocket
         if path == "/":
             return _reponse_fichier(connection, WEB_DIR, "index.html", entetes)
+        if path == "/licence":  # GPL, article 5 d : l'interface permet de lire la licence
+            return _reponse_fichier(connection, config.ROOT, "LICENSE", entetes)
         if path.startswith("/web/"):
             return _reponse_fichier(connection, WEB_DIR, path[5:], entetes)
         if path.startswith("/schemas/"):

@@ -73,3 +73,11 @@ Chaque décision : ce qui est choisi, pourquoi, ce que ça coûte de la changer.
 - **Documents :** `docs/CONFIDENTIALITE.md` (politique), `LICENSE` (propriétaire, dont l'article 4 fait de la politique une condition de la licence), `docs/TIERS.md`.
 - **Caméra, nouvelles fonctions :** main levée (MediaPipe GestureRecognizer, local) qui coupe Kalan, plus fiable que la voix pour interrompre dans le bruit ; pouce levé / baissé ; fatigue (yeux fermés, bâillement), distance à l'écran, luminosité, plusieurs élèves. Geste retenu s'il dure ~0,6 s, un au plus toutes les 4 s.
 - **Point juridique ouvert :** `piper-tts` 1.8.0 est sous GPL-3.0 et importé par Kalan : incompatible avec une distribution propriétaire. Voir les options dans `docs/TIERS.md`.
+
+## D11 — Kalan devient logiciel libre, GPL-3.0 ou ultérieure (24 oct. 2026)
+
+- **Décision du porteur**, après le constat que la voix (piper-tts) est sous GPL-3.0.
+- **Conséquence :** la GPL interdit d'ajouter des restrictions (art. 7 et 10). L'ancien article 4 de la licence propriétaire (protection des élèves comme condition de licence) ne pouvait pas être conservé.
+- **Remplacement :** la protection passe par le **nom** (GPL art. 7 e) : seule une version qui respecte la politique de confidentialité peut s'appeler Kalan (`docs/MARQUE.md`). À déposer comme marque à l'OAPI pour être opposable.
+- **Mentions légales (GPL art. 5 d) :** l'écran de classe affiche le copyright, l'absence de garantie, la licence (route `/licence`) et l'adresse du code source ; la CLI aussi.
+- **Atout pour la candidature :** un logiciel libre, hors ligne, sans collecte de données, est éligible au statut de **bien public numérique** (Digital Public Goods Alliance), argument recherché par les programmes de l'ONU.

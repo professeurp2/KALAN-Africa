@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Lamine SACKO
 // Écran de classe : reçoit les évènements du cours (kalan/web.py) et les répartit
 // entre l'avatar, le tableau, les sous-titres et la caméra.
 // Pour ajouter une fonctionnalité (révision, tableau de bord enseignant…), écouter

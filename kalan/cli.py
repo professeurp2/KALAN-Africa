@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Prototype en ligne de commande.
 
     python -m kalan.cli                        # questions tapées au clavier
@@ -9,6 +11,9 @@ from __future__ import annotations
 import argparse
 import os
 import time
+
+MENTIONS = ("Kalan © 2026 Lamine SACKO — logiciel libre sous licence GNU GPL v3 ou ultérieure, "
+            "fourni SANS AUCUNE GARANTIE (voir LICENSE).")
 
 
 def main(argv=None):
@@ -80,6 +85,7 @@ def questions(args, index, assistant):
         listen = lambda: transcribe(record())
         speaker = None if args.muet else Speaker()
 
+    print(MENTIONS)
     print("Kalan prêt. Ctrl+C pour quitter.\n")
     while True:
         try:

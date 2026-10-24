@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Mode cours : Kalan déroule la leçon comme un enseignant, et l'élève peut
 l'interrompre à tout moment. Kalan réagit, puis reprend là où il s'était arrêté.
 

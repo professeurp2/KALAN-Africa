@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Lamine SACKO
 // L'avatar de Kalan : la bouche suit le volume de la voix, le bras pointe le tableau,
 // la tête se penche quand il écoute, les yeux montent quand il réfléchit.
 

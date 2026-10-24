@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Tests sans modèles : un embedder factice par sac de mots remplace MiniLM."""
 import json
 

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Indexe des chapitres du programme.
 
     python -m kalan.ingest data/programme                 # tous les .md

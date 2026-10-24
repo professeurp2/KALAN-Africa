@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Question → passages du programme → réponse ancrée, citée, découpée en segments.
 
 Chaque segment porte une phrase à dire et, optionnellement, l'élément du schéma

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Configuration centrale de Kalan.
 
 Les choix verrouillés (voir docs/decisions.md) sont ici. Changer EMBEDDING_MODEL

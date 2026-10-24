@@ -53,8 +53,16 @@ techniquement rien charger hors de l'appareil. Un établissement peut interdire 
 `KALAN_CAMERA=0`.
 
 🔒 **Vie privée : [docs/CONFIDENTIALITE.md](docs/CONFIDENTIALITE.md)**, appliquée par le code et
-vérifiée par `tests/test_confidentialite.py`. Licence : [LICENSE](LICENSE) (propriétaire, projet) ;
-composants tiers : [docs/TIERS.md](docs/TIERS.md). Pour ajouter une fonctionnalité : un nouvel évènement dans `kalan/web.py`
+vérifiée par `tests/test_confidentialite.py`.
+
+## Licence
+
+Kalan est un **logiciel libre** : © 2026 Lamine SACKO, publié sous la **licence GNU GPL version 3
+ou ultérieure** ([LICENSE](LICENSE)). Vous pouvez l'utiliser, l'étudier, le modifier et le
+redistribuer, sous la même licence. Il est fourni **sans aucune garantie**.
+
+Le **nom « Kalan »** est réservé aux versions qui respectent la politique de confidentialité :
+[docs/MARQUE.md](docs/MARQUE.md). Composants tiers et leurs licences : [docs/TIERS.md](docs/TIERS.md). Pour ajouter une fonctionnalité : un nouvel évènement dans `kalan/web.py`
 et un module dans `web/` (voir `GESTES` dans `web/app.js`).
 
 **Mode cours.** Kalan déroule le chapitre leçon par leçon, en pointant le schéma, et laisse

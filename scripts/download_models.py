@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Télécharge une fois, avec réseau, tous les modèles dans models/.
 
 Après ce script, Kalan fonctionne sans aucune connexion (R6).

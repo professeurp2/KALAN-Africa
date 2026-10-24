@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Mode cours, sans micro ni modèles : un élève scripté remplace la classe, un LLM scripté répond."""
 import json
 import random

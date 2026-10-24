@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Découpage du programme en passages citables (chapitre, leçon, page).
 
 Format Markdown attendu pour un chapitre :

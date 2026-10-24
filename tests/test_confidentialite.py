@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Lamine SACKO
 """Les règles de docs/CONFIDENTIALITE.md, vérifiées dans le code.
 
 Si un de ces tests échoue, ce n'est pas un détail : c'est une promesse faite aux
