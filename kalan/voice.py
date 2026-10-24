@@ -22,15 +22,48 @@ def record_push_to_talk() -> np.ndarray:
     return np.concatenate(frames).ravel() if frames else np.zeros(0, dtype=np.float32)
 
 
+def record_until_silence(silence_s: float = 1.2, max_s: float = 15.0, block_s: float = 0.05) -> np.ndarray:
+    """Mains libres : commence quand l'élève parle, s'arrête après `silence_s` de silence.
+
+    Le seuil s'adapte au bruit de la pièce, mesuré pendant une demi-seconde au départ.
+    """
+    import sounddevice as sd
+
+    block = int(config.SAMPLE_RATE_IN * block_s)
+    rms = lambda x: float(np.sqrt(np.mean(x ** 2)))
+    with sd.InputStream(samplerate=config.SAMPLE_RATE_IN, channels=1, dtype="float32", blocksize=block) as stream:
+        noise = np.median([rms(stream.read(block)[0]) for _ in range(int(0.5 / block_s))])
+        seuil = max(3 * noise, 0.01)
+        print("🎤 Je t'écoute… pose ta question.")
+        pre: list[np.ndarray] = []
+        while True:  # attendre la parole, en gardant 0,3 s avant pour ne pas couper le début
+            x = stream.read(block)[0].ravel()
+            pre = (pre + [x])[-int(0.3 / block_s):]
+            if rms(x) > seuil:
+                break
+        frames, calme = list(pre), 0.0
+        while calme < silence_s and len(frames) * block_s < max_s:
+            x = stream.read(block)[0].ravel()
+            frames.append(x)
+            calme = calme + block_s if rms(x) < seuil else 0.0
+    return np.concatenate(frames)
+
+
 class Transcriber:
-    def __init__(self, model: str = config.WHISPER_MODEL):
+    def __init__(self, model: str = config.WHISPER_MODEL, titres: list[str] | None = None):
+        """`titres` : chapitres et leçons indexés, donnés à Whisper comme contexte.
+
+        Le vocabulaire de la leçon améliore nettement la transcription des mots techniques.
+        """
         from faster_whisper import WhisperModel
 
         self.model = WhisperModel(model, device="cpu", compute_type="int8",
                                   download_root=str(config.MODELS_DIR / "whisper"))
+        self.prompt = ("Question d'un élève sur sa leçon : " + " ; ".join(titres) + ".") if titres else None
 
     def __call__(self, audio: np.ndarray) -> str:
-        segments, _ = self.model.transcribe(audio, language="fr", vad_filter=True, beam_size=1)
+        segments, _ = self.model.transcribe(audio, language="fr", vad_filter=True, beam_size=5,
+                                            initial_prompt=self.prompt)
         return " ".join(s.text.strip() for s in segments).strip()
 
 

@@ -30,8 +30,11 @@ ollama pull qwen2.5:7b
 ```bash
 python -m kalan.ingest data/programme --reset   # indexer les chapitres
 python -m kalan.cli                              # questions au clavier
-python -m kalan.cli --voix                       # questions au micro, réponse vocale
+python -m kalan.cli --voix                       # micro : Entrée pour parler, Entrée pour finir
+python -m kalan.cli --voix --mains-libres        # micro : écoute dès qu'on parle (démo, salle calme)
 ```
+
+Ollama doit tourner (`ollama serve`).
 
 Ajouter un chapitre officiel en PDF :
 

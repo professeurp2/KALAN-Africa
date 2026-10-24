@@ -14,6 +14,8 @@ def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--voix", action="store_true", help="entrée micro et sortie vocale")
     p.add_argument("--muet", action="store_true", help="avec --voix : ne pas parler, seulement afficher")
+    p.add_argument("--mains-libres", action="store_true",
+                   help="avec --voix : écoute dès qu'on parle, sans appuyer sur Entrée (démo, salle calme)")
     args = p.parse_args(argv)
 
     # R6 : à l'exécution, aucun modèle n'est téléchargé. Lancer scripts/download_models.py une fois avant.
@@ -33,10 +35,11 @@ def main(argv=None):
 
     listen = speaker = None
     if args.voix:
-        from .voice import Speaker, Transcriber, record_push_to_talk
+        from .voice import Speaker, Transcriber, record_push_to_talk, record_until_silence
 
-        transcribe = Transcriber()
-        listen = lambda: transcribe(record_push_to_talk())
+        transcribe = Transcriber(titres=index.titres())
+        record = record_until_silence if args.mains_libres else record_push_to_talk
+        listen = lambda: transcribe(record())
         speaker = None if args.muet else Speaker()
 
     print("Kalan prêt. Ctrl+C pour quitter.\n")
