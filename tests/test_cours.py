@@ -121,6 +121,39 @@ def test_bruit_pendant_la_phrase_la_fait_redire_sans_appeler_le_llm(tmp_path):
     assert a.prompts == [] and e.dit[2:4] == ["A.", "A."]
 
 
+def test_memoire_de_la_seance(tmp_path):
+    """Kalan reçoit l'historique et les passages des leçons déjà vues."""
+    cours = Cours(CHAPITRE, [Lecon("Leçon 1", "p. 42", [Segment("La pile est un générateur.")]),
+                             Lecon("Leçon 2", "p. 43", [Segment("X.")])])
+    a = make_assistant(tmp_path, [{"type": "question", "sources": [1], "segments": [{"texte": "J'ai dit…"}]}])
+    e = Eleve(apres={6: "Tu as dit quoi sur la pile ?"})  # pendant la leçon 2
+    faire_cours(cours, a, e, rng=RNG())
+    prompt = a.prompts[0]
+    assert "HISTORIQUE DE LA SÉANCE" in prompt and "Kalan : La pile est un générateur." in prompt
+    assert "Élève : Tu as dit quoi sur la pile ?" in prompt
+    assert "La pile est un générateur. La lampe est un récepteur." in prompt  # passage de la leçon 1
+
+
+class EleveObserve(Eleve):
+    def __init__(self, observations, **kw):
+        super().__init__(**kw)
+        self.observations = observations
+
+    def observation(self):
+        from kalan.cours import Observation
+        return self.observations.pop(0) if self.observations else Observation()
+
+
+def test_camera_eleve_absent_puis_perplexe(tmp_path):
+    from kalan.cours import ABSENT, PERPLEXE, Observation
+    e = EleveObserve([Observation(present=False), Observation(present=True),
+                      Observation(perplexe=True), Observation(perplexe=True)])
+    faire_cours(COURS, make_assistant(tmp_path, []), e, rng=RNG())
+    # après « Leçon 1. » : absent → attend → revenu → A → perplexe
+    assert e.dit[2] == ABSENT and e.dit[3] == "A." and e.dit[4] == PERPLEXE
+    assert e.dit.count(PERPLEXE) == 1  # une seule remarque par leçon
+
+
 def test_reagir_json_invalide_est_incompris(tmp_path):
     a = make_assistant(tmp_path, [])
     a.llm = lambda prompt, system=None: "pas du json"

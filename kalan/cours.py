@@ -41,19 +41,34 @@ Réponds en JSON strict : {"segments": [{"texte": "...", "pointe": "id_ou_null"}
 SYSTEM_CLASSE = """Tu es Kalan, un enseignant chaleureux et patient. Tu fais cours à un élève malien et il vient de te parler.
 Ce qu'il a dit vient d'une transcription automatique de sa voix : des mots peuvent être mal reconnus.
 Devine le sens avec le vocabulaire de la leçon (exemple : « gératère » veut dire « générateur »).
+Tu te souviens de toute la séance (HISTORIQUE) : si l'élève parle de « ce que tu as dit », retrouve-le.
 
 Choisis le "type" de ce qu'il a dit, puis réagis :
-- "question" : une question sur la leçon ou le programme. Réponds UNIQUEMENT avec les EXTRAITS DU PROGRAMME,
-  en 1 à 3 phrases courtes et simples, en le tutoyant. Tu peux reprendre son mot (« Le générateur ? C'est… »).
+- "question" : une question sur la leçon, sur ce que tu as dit, ou sur le programme. Réponds UNIQUEMENT avec
+  les EXTRAITS DU PROGRAMME, en 1 à 3 phrases courtes et simples, en le tutoyant. Tu peux reprendre son mot
+  (« Le générateur ? C'est… »). Si la leçon utilise une notion sans la définir (par exemple « l'énergie »),
+  dis ce que les extraits en disent, puis précise que la définition complète, il la verra avec son professeur.
 - "pas_compris" : il dit qu'il n'a pas compris (même si le reste de sa phrase est confus), ou demande
   d'expliquer autrement. Réexplique l'idée de la DERNIÈRE PHRASE DITE AVEC D'AUTRES MOTS, plus simples
   (ne la répète jamais telle quelle), en t'appuyant sur les extraits, en 1 à 3 phrases.
 - "bavardage" : salutation, remerciement, « qui es-tu », « écoute », encouragement… Réponds en une phrase
   courte et gentille. Tu es Kalan, l'assistant qui l'aide à comprendre son programme.
 - "hors_programme" : une vraie question, mais les extraits ne permettent pas d'y répondre. "segments" vide.
-- "incompris" : même en devinant, ce qu'il a dit n'a pas de sens. "segments" vide.
-N'ajoute jamais de connaissance absente des extraits. Si un SCHÉMA est fourni et qu'une phrase parle d'un
-de ses éléments, mets son identifiant dans "pointe", sinon null.
+- "incompris" : des mots sans suite, qui n'ont pas de sens même en devinant. "segments" vide.
+  Une phrase française claire n'est JAMAIS "incompris".
+N'ajoute jamais de connaissance absente des extraits. Réponds à SA question avec tes mots : ne recopie pas
+un extrait entier. Si un SCHÉMA est fourni et qu'une phrase parle d'un de ses éléments, mets son identifiant
+dans "pointe", sinon null.
+
+Exemples (extraits : « Une lampe est un récepteur : elle transforme l'énergie électrique en lumière et en chaleur. »
+« Lorsque l'interrupteur est ouvert, le courant ne circule plus et la lampe s'éteint. ») :
+- Élève : « C'est quoi l'énergie ? » →
+  {"type": "question", "segments": [{"texte": "Dans ta leçon, on parle de l'énergie électrique : la lampe la reçoit et la transforme en lumière et en chaleur.", "pointe": "lampe"}, {"texte": "La définition complète de l'énergie, tu la verras avec ton professeur.", "pointe": null}], "sources": [1]}
+- Élève : « Tu as dit quoi sur l'interrupteur tout à l'heure ? » →
+  {"type": "question", "segments": [{"texte": "J'ai dit que si l'interrupteur est ouvert, le courant ne passe plus.", "pointe": "interrupteur"}, {"texte": "Alors la lampe s'éteint.", "pointe": "lampe"}], "sources": [2]}
+- Élève : « Qui a inventé la lampe ? » → {"type": "hors_programme", "segments": [], "sources": []}
+- Élève : « Bleu fourchette maison » → {"type": "incompris", "segments": [], "sources": []}
+
 JSON strict : {"type": "...", "segments": [{"texte": "...", "pointe": null}], "sources": [numéros des extraits utilisés]}"""
 
 # Ce que Kalan dit autour du cours. Varier évite l'effet machine.
@@ -185,19 +200,44 @@ class Reaction:
 TYPES = {"question", "pas_compris", "bavardage", "hors_programme", "incompris"}
 
 
-def reagir(parole: str, chapitre: str, lecon: str, derniere: str, assistant: Assistant) -> Reaction:
-    """Comprend ce que l'élève a dit dans le contexte de la leçon, et prépare la réaction de Kalan."""
+class Journal:
+    """Mémoire de la séance : ce que Kalan et l'élève se sont dit, et les leçons déjà vues.
+
+    Elle reste en mémoire vive le temps de la séance et n'est jamais écrite sur disque (§10).
+    """
+
+    def __init__(self, taille: int = 20):
+        self.lignes: list[str] = []
+        self.lecons: list[str] = []
+        self.taille = taille
+
+    def kalan(self, texte: str):
+        self.lignes.append(f"Kalan : {texte}")
+
+    def eleve(self, texte: str):
+        self.lignes.append(f"Élève : {texte}")
+
+    def historique(self) -> str:
+        return "\n".join(self.lignes[-self.taille:])
+
+
+def reagir(parole: str, chapitre: str, lecon: str, derniere: str, assistant: Assistant,
+           journal: Journal | None = None) -> Reaction:
+    """Comprend ce que l'élève a dit dans le contexte de la séance, et prépare la réaction de Kalan."""
+    lecons = (journal.lecons[-3:] if journal else []) + [lecon]  # leçons récentes : on peut y revenir
     extraits, vus = [], set()
     proches = [h.chunk for h in assistant.index.search(assistant.embed([parole])[0])
                if h.score >= config.MIN_SIMILARITY]
-    for c in [c for c in assistant.index.chunks() if c.chapitre == chapitre and c.lecon == lecon] + proches:
+    for c in [c for c in assistant.index.chunks() if c.chapitre == chapitre and c.lecon in lecons] + proches:
         if c.text not in vus:
             vus.add(c.text)
             extraits.append(c)
     schema = schema_for(chapitre)
+    historique = journal.historique() if journal else ""
     prompt = ("EXTRAITS DU PROGRAMME :\n"
               + "\n\n".join(f"[{i + 1}] ({c.citation()})\n{c.text}" for i, c in enumerate(extraits))
               + _schema_prompt(schema)
+              + (f"\n\nHISTORIQUE DE LA SÉANCE :\n{historique}" if historique else "")
               + f"\n\nLEÇON EN COURS : {lecon}\nDERNIÈRE PHRASE DITE : {derniere}\nL'ÉLÈVE A DIT : {parole}")
     raw = assistant.llm(prompt, SYSTEM_CLASSE)
     try:
@@ -226,11 +266,62 @@ class Classe(Protocol):
 
     def afficher(self, texte: str): ...
 
+    # Facultatif : nouvelle_lecon(lecon, numero, total) pour changer de diapositive,
+    # observation() -> Observation pour ce que la caméra voit de l'élève.
+
+
+@dataclass
+class Observation:
+    """Ce que la caméra voit de l'élève, calculé sur l'appareil, jamais enregistré."""
+    present: bool = True
+    attentif: bool = True     # regarde l'écran
+    perplexe: bool = False    # expression soutenue de difficulté
+
+
+ABSENT = "Tu es là ? Je t'attends pour continuer."
+DISTRAIT = "Regarde l'écran avec moi, c'est important."
+PERPLEXE = "Tu as l'air un peu perdu. Si tu veux que je réexplique, dis-le moi."
+
 
 def faire_cours(cours: Cours, assistant: Assistant, classe: Classe,
                 pause: float = 0.8, pause_fin_lecon: float = 3.0, rng: random.Random | None = None):
     rng = rng or random.Random()
-    dire = lambda texte: classe.dire(Segment(texte))
+    journal = Journal()
+    observer = getattr(classe, "observation", None)
+    deja_dit: set[str] = set()  # une remarque d'observation au plus par leçon
+
+    def dit(seg: Segment) -> str | None:
+        journal.kalan(seg.texte)
+        parole = classe.dire(seg)
+        if parole:
+            journal.eleve(parole)
+        return parole
+
+    def ecoute(attente: float) -> str | None:
+        parole = classe.ecouter(attente)
+        if parole:
+            journal.eleve(parole)
+        return parole
+
+    dire = lambda texte: dit(Segment(texte))
+
+    def regarder() -> str | None:
+        """Comme un enseignant qui lève les yeux vers l'élève entre deux phrases."""
+        if not observer:
+            return None
+        obs = observer()
+        if not obs.present:
+            parole = dire(ABSENT)
+            for _ in range(60):  # attend jusqu'à ~1 min que l'élève revienne
+                if parole or observer().present:
+                    break
+                parole = ecoute(1.0)
+            return parole
+        for remarque, vrai in ((PERPLEXE, obs.perplexe), (DISTRAIT, not obs.attentif)):
+            if vrai and remarque not in deja_dit:
+                deja_dit.add(remarque)
+                return dire(remarque) or ecoute(pause_fin_lecon)
+        return None
 
     def echange(parole: str | None, lecon: str, derniere: str) -> str | None:
         """Réagit à l'élève jusqu'à ce qu'il laisse Kalan reprendre. Renvoie 'stop' ou 'repete' s'il le demande."""
@@ -240,7 +331,7 @@ def faire_cours(cours: Cours, assistant: Assistant, classe: Classe,
                 return action
             if action != "parole":
                 return None
-            r = reagir(parole, cours.chapitre, lecon, derniere, assistant)
+            r = reagir(parole, cours.chapitre, lecon, derniere, assistant, journal)
             if r.type == "incompris":
                 segments = [Segment(rng.choice(INCOMPRIS))]
             elif r.type == "hors_programme":
@@ -249,7 +340,7 @@ def faire_cours(cours: Cours, assistant: Assistant, classe: Classe,
                 segments = r.reponse.segments
             parole = None
             for seg in segments:
-                parole = classe.dire(seg)
+                parole = dit(seg)
                 if parole:
                     break
                 derniere = seg.texte
@@ -257,7 +348,7 @@ def faire_cours(cours: Cours, assistant: Assistant, classe: Classe,
                 continue
             if r.reponse.citations:
                 classe.afficher("📖 Source : " + " | ".join(r.reponse.citations))
-            parole = classe.ecouter(5.0 if r.type == "incompris" else pause_fin_lecon)
+            parole = ecoute(5.0 if r.type == "incompris" else pause_fin_lecon)
             if parole is None:
                 parole = dire(rng.choice(REPRISES))
                 if parole is None:
@@ -265,24 +356,30 @@ def faire_cours(cours: Cours, assistant: Assistant, classe: Classe,
 
     premiere = cours.lecons[0].titre if cours.lecons else ""
     intro = INTRO.format(chapitre=oral(cours.chapitre))
-    if echange(dire(intro) or classe.ecouter(pause), premiere, intro) == "stop":
+    if echange(dire(intro) or ecoute(pause), premiere, intro) == "stop":
         return dire(AU_REVOIR)
 
-    for lecon in cours.lecons:
-        classe.afficher(f"\n📘 {lecon.titre}   ({lecon.citation})")
+    for n, lecon in enumerate(cours.lecons, 1):
+        nouvelle = getattr(classe, "nouvelle_lecon", None)
+        if nouvelle:
+            nouvelle(lecon, n, len(cours.lecons))
+        else:
+            classe.afficher(f"\n📘 {lecon.titre}   ({lecon.citation})")
+        deja_dit.clear()
         segments = [Segment(f"{oral(lecon.titre)}.")] + lecon.segments + [Segment(rng.choice(CLAIR))]
         i = 0
         while i < len(segments):
             dernier = i == len(segments) - 1
-            parole = classe.dire(segments[i])
+            parole = dit(segments[i])
             coupe = parole is not None  # interrompu au milieu de la phrase
             if not coupe:
-                parole = classe.ecouter(pause_fin_lecon if dernier else pause)
+                parole = ecoute(pause_fin_lecon if dernier else pause) or regarder()
             action = echange(parole, lecon.titre, segments[i].texte)
             if action == "stop":
                 return dire(AU_REVOIR)
             if action == "repete" or coupe:
                 continue  # redire la même phrase
             i += 1
+        journal.lecons.append(lecon.titre)
 
     dire(FIN)
