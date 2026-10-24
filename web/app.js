@@ -11,7 +11,11 @@ const $ = (id) => document.getElementById(id);
 const avatar = new Avatar(document.querySelector(".prof"));
 const tableau = new Tableau();
 let ws;
-const camera = new Camera($("video"), $("camera"), (obs) => envoyer({ type: "observation", ...obs }));
+let cameraAutorisee = true;
+const camera = new Camera($("video"), $("camera"), {
+  observation: (obs) => envoyer({ type: "observation", ...obs }),
+  geste: (nom) => envoyer({ type: "geste", nom }),
+});
 
 function envoyer(msg) {
   if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
@@ -32,7 +36,6 @@ function sousTitrer(texte, dureeMs) {
   p.replaceChildren(...mots.map((m) => Object.assign(document.createElement("span"), { className: "mot", textContent: m + " " })));
   const total = texte.length || 1;
   let cumul = 0;
-  clearTimeout(sousTitrer.fin);
   sousTitrer.minuteries?.forEach(clearTimeout);
   sousTitrer.minuteries = [...p.children].map((span, i) => {
     const t = (cumul / total) * dureeMs;
@@ -41,10 +44,14 @@ function sousTitrer(texte, dureeMs) {
   });
 }
 
+const NOMS_GESTES = { main_levee: "✋", pouce_haut: "👍", pouce_bas: "👎" };
 let bulleMinuterie;
 const GESTES = {
   seance(m) {
     tableau.seance(m);
+    cameraAutorisee = m.camera_autorisee !== false;
+    $("option-camera").hidden = !cameraAutorisee;
+    $("puce-camera").hidden = !cameraAutorisee;
     $("accueil-chapitre").textContent = m.chapitre;
     $("commencer").disabled = false;
     $("commencer").textContent = "Commencer le cours";
@@ -62,6 +69,11 @@ const GESTES = {
     avatar.finir();
     sousTitrer.minuteries?.forEach(clearTimeout);
   },
+  geste(m) {
+    const bulle = Object.assign(document.createElement("div"), { className: "geste-bulle", textContent: NOMS_GESTES[m.nom] || "✋" });
+    document.querySelector(".scene").append(bulle);
+    setTimeout(() => bulle.remove(), 2500);
+  },
   eleve(m) {
     const b = $("eleve");
     b.textContent = m.texte;
@@ -73,6 +85,7 @@ const GESTES = {
   source: (m) => tableau.source(m.texte),
   fin() {
     avatar.etat("pret");
+    basculerCamera(false); // l'accord valait pour cette séance
     toast("Fin du cours. Bravo !", 6000);
     $("commencer").textContent = "Recommencer le cours";
     $("accueil").hidden = false;
@@ -89,6 +102,7 @@ function connecter() {
     const m = JSON.parse(e.data);
     GESTES[m.type]?.(m);
   };
+  ws.onopen = () => camera.active && envoyer({ type: "consentement_camera", accord: true });
   ws.onclose = () => {
     $("commencer").disabled = true;
     $("commencer").textContent = "Connexion à Kalan…";
@@ -96,23 +110,41 @@ function connecter() {
   };
 }
 
+/** Demande l'accord à chaque séance : il n'est jamais mémorisé. */
+function demanderAccord() {
+  const d = $("consentement");
+  $("accord-famille").checked = false;
+  $("accepter-camera").disabled = true;
+  d.showModal();
+  return new Promise((resoudre) => {
+    $("accepter-camera").onclick = () => { d.close(); resoudre(true); };
+    $("refuser-camera").onclick = () => { d.close(); resoudre(false); };
+    d.oncancel = () => resoudre(false);
+  });
+}
+$("accord-famille").addEventListener("change", (e) => ($("accepter-camera").disabled = !e.target.checked));
+
 async function basculerCamera(activer) {
   const bouton = $("puce-camera");
+  if (activer && (!cameraAutorisee || !(await demanderAccord()))) activer = false;
   try {
     if (activer) {
       $("camera").hidden = false;
       bouton.textContent = "📷 Caméra : chargement…";
       await camera.demarrer();
-    } else {
+      envoyer({ type: "consentement_camera", accord: true });
+    } else if (camera.active || !$("camera").hidden) {
+      envoyer({ type: "consentement_camera", accord: false });
       camera.arreter();
       $("camera").hidden = true;
     }
   } catch (e) {
+    envoyer({ type: "consentement_camera", accord: false });
     camera.arreter();
     $("camera").hidden = true;
     toast("Caméra indisponible : " + e.message);
   }
-  bouton.textContent = "📷 Caméra : " + (camera.active ? "oui" : "non");
+  bouton.textContent = camera.active ? "● Caméra active" : "📷 Caméra : non";
   bouton.classList.toggle("actif", camera.active);
 }
 
@@ -125,5 +157,6 @@ $("commencer").addEventListener("click", () => {
   if ($("opt-camera").checked && !camera.active) basculerCamera(true);
 });
 $("puce-camera").addEventListener("click", () => basculerCamera(!camera.active));
+$("couper-camera").addEventListener("click", () => basculerCamera(false));
 
 connecter();

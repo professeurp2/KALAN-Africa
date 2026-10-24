@@ -5,9 +5,14 @@ jamais écrit sur disque (protection des mineurs, §10).
 """
 from __future__ import annotations
 
+from typing import Callable
+
 import numpy as np
 
 from . import config
+
+# Renvoyé par le micro quand un geste (main levée…) a interrompu Kalan, au lieu d'audio.
+GESTE = np.zeros(0, dtype=np.float32)
 
 
 def record_push_to_talk() -> np.ndarray:
@@ -73,13 +78,15 @@ class Micro:
             calme = calme + self.BLOCK_S if _rms(x) < self.seuil else 0.0
         return np.concatenate(frames)
 
-    def ecouter(self, attente: float | None = None) -> np.ndarray | None:
+    def ecouter(self, attente: float | None = None, arret: Callable[[], bool] | None = None) -> np.ndarray | None:
         """Attend que l'élève parle (au plus `attente` s, sinon sans limite), puis enregistre jusqu'au silence."""
         self._vider()
         pre: list[np.ndarray] = []
         n = int(self.PRE_S / self.BLOCK_S)
         t = 0.0
         while attente is None or t < attente:
+            if arret and arret():
+                return GESTE
             x = self._lire()
             t += self.BLOCK_S
             pre = (pre + [x])[-n:]
@@ -87,8 +94,12 @@ class Micro:
                 return self._jusqu_au_silence(pre)
         return None
 
-    def jouer(self, pcm: np.ndarray, rate: int) -> np.ndarray | None:
-        """Joue la voix de Kalan en écoutant. Si l'élève parle par-dessus, coupe et renvoie ce qu'il dit."""
+    def jouer(self, pcm: np.ndarray, rate: int, arret: Callable[[], bool] | None = None) -> np.ndarray | None:
+        """Joue la voix de Kalan en écoutant. Si l'élève parle par-dessus, coupe et renvoie ce qu'il dit.
+
+        `arret` : interroge un autre signal (un geste vu par la caméra) ; s'il répond vrai,
+        Kalan se tait aussitôt et on renvoie GESTE.
+        """
         import sounddevice as sd
 
         self._vider()
@@ -98,6 +109,9 @@ class Micro:
         niveaux, pre, fort, t = [], [], 0, 0.0
         n_pre, n_fort = int(self.PRE_S / self.BLOCK_S), int(self.DUREE_COUPURE / self.BLOCK_S)
         while t < len(pcm) / rate + 0.1:
+            if arret and arret():
+                sd.stop()
+                return GESTE
             x = self._lire()
             t += self.BLOCK_S
             r = _rms(x)
@@ -137,13 +151,21 @@ class ClasseVocale:
         pcm = self.speaker.synth(seg.texte)
         self.recent = (self.recent + [seg.texte])[-2:]
         self.annoncer(seg, pcm)
-        audio = self.micro.jouer(pcm, self.speaker.rate)
+        audio = self.micro.jouer(pcm, self.speaker.rate, arret=self.geste_en_attente)
         if audio is not None:
             self.interrompu()
-        return self._texte(audio)
+        return self.reagir_geste(pendant_phrase=True) if audio is GESTE else self._texte(audio)
 
     def ecouter(self, attente: float) -> str | None:
-        return self._texte(self.micro.ecouter(attente))
+        audio = self.micro.ecouter(attente, arret=self.geste_en_attente)
+        return self.reagir_geste(pendant_phrase=False) if audio is GESTE else self._texte(audio)
+
+    def geste_en_attente(self) -> bool:
+        """Sans caméra, aucun geste : la page web (kalan.web) redéfinit ceci."""
+        return False
+
+    def reagir_geste(self, pendant_phrase: bool) -> str | None:
+        return None
 
     def annoncer(self, seg, pcm: np.ndarray):
         print(f"💬 {seg.texte}" + (f"   [→ pointe : {seg.pointe}]" if seg.pointe else ""))

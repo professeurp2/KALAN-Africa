@@ -23,6 +23,9 @@ def test_intention():
     assert intention("Oui") == "suite"
     assert intention("Oui mais pourquoi la lampe brille ?") == "parole"
     assert intention("C'est pas bien compris") == "parole"  # le LLM réexplique
+    # Gestes vus par la caméra (kalan.web.ClasseWeb.reagir_geste)
+    assert intention("👍 continue") == "suite"
+    assert intention("👎 Je n'ai pas compris, tu peux réexpliquer autrement ?") == "parole"
 
 
 def make_assistant(tmp_path, reactions):
@@ -152,6 +155,15 @@ def test_camera_eleve_absent_puis_perplexe(tmp_path):
     # après « Leçon 1. » : absent → attend → revenu → A → perplexe
     assert e.dit[2] == ABSENT and e.dit[3] == "A." and e.dit[4] == PERPLEXE
     assert e.dit.count(PERPLEXE) == 1  # une seule remarque par leçon
+
+
+def test_camera_fatigue_avant_le_reste_et_groupe_salue_une_fois(tmp_path):
+    from kalan.cours import FATIGUE, PLUSIEURS, Observation
+    groupe_fatigue = Observation(plusieurs=True, fatigue=True, perplexe=True)
+    e = EleveObserve([groupe_fatigue] * 3)
+    faire_cours(COURS, make_assistant(tmp_path, []), e, rng=RNG())
+    assert e.dit[2] == PLUSIEURS and e.dit[4] == FATIGUE
+    assert e.dit.count(PLUSIEURS) == 1 and e.dit.count(FATIGUE) == 1
 
 
 def test_reagir_json_invalide_est_incompris(tmp_path):

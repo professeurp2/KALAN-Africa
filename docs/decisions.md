@@ -65,3 +65,11 @@ Chaque décision : ce qui est choisi, pourquoi, ce que ça coûte de la changer.
   - usage limité à ce que ferait un enseignant qui lève les yeux : attendre un élève absent, proposer de réexpliquer, une remarque au plus par leçon. **Jamais de note, jamais de profil, jamais de rapport sur l'élève.**
 - **Risque à connaître pour la candidature :** la reconnaissance des émotions est **interdite dans l'enseignement** dans l'Union européenne (AI Act, art. 5-1-f, en vigueur depuis février 2025). Le Mali n'y est pas soumis, mais des bailleurs internationaux peuvent y être sensibles. Présenter la fonction comme des « signaux d'attention » facultatifs, et pouvoir la retirer sans rien casser (c'est le cas : sans caméra, Kalan fonctionne à l'identique).
 - **Limite technique :** l'expression du visage n'est pas la compréhension. « En difficulté » = expression soutenue de tristesse, colère, peur ou gêne pendant 3 s : un indice, pas un diagnostic.
+
+## D10 — Vie privée appliquée par le code, gestes de la main (24 oct. 2026)
+
+- **Demande du porteur :** appliquer strictement les règles de vie privée et les inscrire dans la licence.
+- **Appliqué dans `kalan/web.py`, vérifié par `tests/test_confidentialite.py` (10 tests) :** CSP qui interdit toute ressource ou connexion hors de l'appareil ; contrôle d'origine des WebSocket (un autre site ouvert dans le navigateur est refusé, vérifié) ; consentement caméra lié à la page et à la séance, jamais mémorisé ; liste fermée de signaux oui/non ; signaux périmés après 3 s ; aucune écriture disque ; interrupteur `KALAN_CAMERA=0`.
+- **Documents :** `docs/CONFIDENTIALITE.md` (politique), `LICENSE` (propriétaire, dont l'article 4 fait de la politique une condition de la licence), `docs/TIERS.md`.
+- **Caméra, nouvelles fonctions :** main levée (MediaPipe GestureRecognizer, local) qui coupe Kalan, plus fiable que la voix pour interrompre dans le bruit ; pouce levé / baissé ; fatigue (yeux fermés, bâillement), distance à l'écran, luminosité, plusieurs élèves. Geste retenu s'il dure ~0,6 s, un au plus toutes les 4 s.
+- **Point juridique ouvert :** `piper-tts` 1.8.0 est sous GPL-3.0 et importé par Kalan : incompatible avec une distribution propriétaire. Voir les options dans `docs/TIERS.md`.

@@ -42,4 +42,9 @@ SAMPLE_RATE_IN = 16000
 # avec un casque, l'écho disparaît et 1,5 suffit.
 FACTEUR_ECHO = float(os.environ.get("KALAN_FACTEUR_ECHO", "2.5"))
 
+# --- Vie privée (docs/CONFIDENTIALITE.md) ---
+# Un établissement ou le ministère peut interdire la caméra : KALAN_CAMERA=0.
+# Kalan fonctionne alors à l'identique, sans aucune option caméra à l'écran.
+CAMERA_AUTORISEE = os.environ.get("KALAN_CAMERA", "1") != "0"
+
 REFUS = "Ce n'est pas dans ton programme. Je préfère ne pas inventer : demande à ton professeur."

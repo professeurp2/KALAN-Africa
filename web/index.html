@@ -79,12 +79,21 @@
       </div>
 
       <section class="camera" id="camera" hidden>
+        <div class="camera-tete">
+          <span class="rec">● Caméra active</span>
+          <button class="couper" id="couper-camera">Couper</button>
+        </div>
         <video id="video" autoplay muted playsinline></video>
         <ul class="signaux">
-          <li id="sig-present">Présent : …</li>
+          <li id="sig-present">Présence : …</li>
           <li id="sig-regard">Regard : …</li>
           <li id="sig-expression">Expression : …</li>
+          <li id="sig-fatigue">Éveil : …</li>
+          <li id="sig-distance">Distance : …</li>
+          <li id="sig-lumiere">Lumière : …</li>
+          <li id="sig-geste">Gestes : …</li>
         </ul>
+        <p class="gestes-aide">✋ Lève la main pour poser une question · 👍 j'ai compris · 👎 réexplique</p>
         <p class="note">Analyse sur cet appareil. Aucune image n'est enregistrée ni envoyée.</p>
       </section>
     </aside>
@@ -116,12 +125,29 @@
       <h2>Bonjour, je suis Kalan.</h2>
       <p class="lead">Je fais cours à voix haute, je te montre le schéma, et tu peux m'interrompre quand tu veux pour poser une question.</p>
       <p class="chap" id="accueil-chapitre"></p>
-      <label class="option"><input type="checkbox" id="opt-camera">
-        <span>Observer l'élève par la caméra<br><small>Présence, regard, expression. Analyse sur cet appareil, aucune image enregistrée. Demander l'accord de l'élève et de sa famille.</small></span></label>
+      <label class="option" id="option-camera"><input type="checkbox" id="opt-camera">
+        <span>Utiliser la caméra<br><small>Lever la main pour parler, pouce levé ou baissé ; Kalan voit aussi si l'élève est absent, fatigué ou en difficulté. Analyse sur cet appareil, aucune image enregistrée.</small></span></label>
       <button class="commencer" id="commencer" disabled>Préparation…</button>
       <p class="aide">Parle à voix claire, un peu plus fort que Kalan. Dis « répète », « continue » ou « arrête » à tout moment.</p>
     </div>
   </div>
+
+  <dialog class="consentement" id="consentement">
+    <h2>Avant d'allumer la caméra</h2>
+    <ul>
+      <li>La caméra sert seulement pendant cette séance, pour que Kalan réagisse comme un enseignant : main levée, élève absent, fatigué ou en difficulté.</li>
+      <li>Tout est analysé <strong>sur cet appareil</strong>. Aucune image, aucune vidéo, aucune émotion n'est enregistrée ni envoyée.</li>
+      <li>Kalan ne note pas l'élève et ne fait aucun rapport sur lui.</li>
+      <li>On peut couper la caméra à tout moment ; elle s'éteint d'elle-même à la fin du cours.</li>
+    </ul>
+    <label class="option"><input type="checkbox" id="accord-famille">
+      <span>L'élève est d'accord, et sa famille (ou l'établissement, pour elle) a donné son accord.</span></label>
+    <div class="actions">
+      <button class="secondaire" id="refuser-camera">Pas de caméra</button>
+      <button class="commencer" id="accepter-camera" disabled>Allumer la caméra</button>
+    </div>
+    <p class="aide">Détails : docs/CONFIDENTIALITE.md</p>
+  </dialog>
 
   <div class="toast" id="toast" hidden></div>
   <script type="module" src="/web/app.js"></script>

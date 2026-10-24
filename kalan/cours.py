@@ -272,15 +272,26 @@ class Classe(Protocol):
 
 @dataclass
 class Observation:
-    """Ce que la caméra voit de l'élève, calculé sur l'appareil, jamais enregistré."""
+    """Ce que la caméra voit de l'élève, calculé sur l'appareil, jamais enregistré.
+
+    Ce sont les seuls signaux qui quittent la caméra (voir docs/CONFIDENTIALITE.md).
+    """
     present: bool = True
     attentif: bool = True     # regarde l'écran
     perplexe: bool = False    # expression soutenue de difficulté
+    fatigue: bool = False     # yeux qui se ferment, bâillements
+    trop_pres: bool = False   # visage trop près de l'écran
+    sombre: bool = False      # pièce trop sombre pour bien voir
+    plusieurs: bool = False   # plusieurs élèves devant l'écran
 
 
 ABSENT = "Tu es là ? Je t'attends pour continuer."
 DISTRAIT = "Regarde l'écran avec moi, c'est important."
-PERPLEXE = "Tu as l'air un peu perdu. Si tu veux que je réexplique, dis-le moi."
+PERPLEXE = "Tu as l'air un peu perdu. Si tu veux que je réexplique, dis-le moi ou montre-moi ton pouce vers le bas."
+FATIGUE = "Tu as l'air fatigué. Si tu veux faire une pause, dis « arrête » : on reprendra plus tard."
+TROP_PRES = "Recule un peu de l'écran, c'est mieux pour tes yeux."
+SOMBRE = "Il fait un peu sombre. Si tu peux, allume la lumière : je te verrai mieux."
+PLUSIEURS = "Je vois que vous êtes plusieurs : bienvenue à tous ! Levez la main pour poser une question."
 
 
 def faire_cours(cours: Cours, assistant: Assistant, classe: Classe,
@@ -289,6 +300,7 @@ def faire_cours(cours: Cours, assistant: Assistant, classe: Classe,
     journal = Journal()
     observer = getattr(classe, "observation", None)
     deja_dit: set[str] = set()  # une remarque d'observation au plus par leçon
+    salue: set[str] = set()     # et certaines une seule fois par séance
 
     def dit(seg: Segment) -> str | None:
         journal.kalan(seg.texte)
@@ -317,7 +329,12 @@ def faire_cours(cours: Cours, assistant: Assistant, classe: Classe,
                     break
                 parole = ecoute(1.0)
             return parole
-        for remarque, vrai in ((PERPLEXE, obs.perplexe), (DISTRAIT, not obs.attentif)):
+        if obs.plusieurs and PLUSIEURS not in salue:  # une seule fois par séance
+            salue.add(PLUSIEURS)
+            return dire(PLUSIEURS) or ecoute(pause)
+        # Par ordre d'importance, et une remarque au plus par sujet et par leçon.
+        for remarque, vrai in ((FATIGUE, obs.fatigue), (PERPLEXE, obs.perplexe), (DISTRAIT, not obs.attentif),
+                               (TROP_PRES, obs.trop_pres), (SOMBRE, obs.sombre)):
             if vrai and remarque not in deja_dit:
                 deja_dit.add(remarque)
                 return dire(remarque) or ecoute(pause_fin_lecon)

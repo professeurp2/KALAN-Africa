@@ -44,10 +44,17 @@ python -m kalan.web                              # ouvre http://localhost:8765
 Kalan apparaît sous forme d'avatar qui parle (bouche synchronisée sur la voix, bras qui pointe le
 tableau). La diapositive avance toute seule avec le cours, les points s'allument au fil de la parole,
 le schéma s'éclaire sur l'élément dont Kalan parle (R7), les sous-titres suivent la voix mot à mot.
-Option **caméra** (désactivée par défaut) : présence, regard vers l'écran, expression, calculés dans
-le navigateur avec des modèles locaux ; Kalan attend un élève absent et propose de réexpliquer à un
-élève qui semble en difficulté. Aucune image n'est enregistrée ni envoyée. Aucune ressource Internet
-n'est chargée par la page. Pour ajouter une fonctionnalité : un nouvel évènement dans `kalan/web.py`
+Option **caméra** (éteinte par défaut, accord demandé à chaque séance) : **lever la main** coupe
+Kalan, qui répond « Oui ? Je t'écoute » ; **pouce levé** = j'ai compris, **pouce baissé** = réexplique.
+Kalan voit aussi si l'élève est absent, distrait, en difficulté, fatigué, trop près de l'écran, si
+la pièce est trop sombre ou si plusieurs élèves sont là. Tout est calculé dans le navigateur avec des
+modèles locaux (face-api, MediaPipe). Aucune image n'est enregistrée ni envoyée, et la page ne peut
+techniquement rien charger hors de l'appareil. Un établissement peut interdire la caméra :
+`KALAN_CAMERA=0`.
+
+🔒 **Vie privée : [docs/CONFIDENTIALITE.md](docs/CONFIDENTIALITE.md)**, appliquée par le code et
+vérifiée par `tests/test_confidentialite.py`. Licence : [LICENSE](LICENSE) (propriétaire, projet) ;
+composants tiers : [docs/TIERS.md](docs/TIERS.md). Pour ajouter une fonctionnalité : un nouvel évènement dans `kalan/web.py`
 et un module dans `web/` (voir `GESTES` dans `web/app.js`).
 
 **Mode cours.** Kalan déroule le chapitre leçon par leçon, en pointant le schéma, et laisse
