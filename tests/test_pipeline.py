@@ -78,3 +78,13 @@ def test_answer_is_cited_from_index_not_llm(tmp_path):
 
 def test_invalid_json_is_a_refusal():
     assert parse_llm("pas du json", [], None).hors_programme
+
+
+def test_enveloppe_pour_la_bouche_de_l_avatar():
+    from kalan.voice import enveloppe
+    rate = 16000
+    t = np.arange(rate) / rate
+    pcm = (np.sin(2 * np.pi * 220 * t) * 8000 * (t > 0.5)).astype(np.int16)  # silence puis voix
+    env = enveloppe(pcm, rate, pas_s=0.1)
+    assert len(env) == 10 and max(env) == 1.0
+    assert env[0] == 0 and env[-1] == 1.0

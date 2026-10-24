@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" font-family="sans-serif" font-size="14">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 300" font-family="sans-serif" font-size="14">
   <g id="fils" stroke="#222" stroke-width="3" fill="none">
     <path d="M80 150 V60 H175 M225 60 H320 V120 M320 180 V240 H80 V170"/>
   </g>

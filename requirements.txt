@@ -5,4 +5,5 @@ sentence-transformers
 faster-whisper
 piper-tts
 sounddevice
+websockets
 pytest

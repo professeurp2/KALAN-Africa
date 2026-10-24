@@ -54,3 +54,14 @@ Chaque décision : ce qui est choisi, pourquoi, ce que ça coûte de la changer.
 - **Whisper** reçoit aussi les deux dernières phrases de Kalan comme contexte, et ignore les segments qu'il juge être du silence.
 - **Formules variées** (reprises, refus, « c'est clair ? ») pour éviter l'effet machine.
 - **Constat important — relecture enseignante obligatoire :** avec la consigne « plus vivante », le LLM 7B a ajouté dans la leçon 3 des notions absentes du chapitre (électrons, « pas une réalité physique »). Justes en physique, mais hors programme. Corrigé à la main dans `data/cours/`. **Tout cours généré doit être relu par un enseignant avant la classe** ; c'est un argument à mettre en avant auprès du ministère, pas une faiblesse à cacher.
+
+## D9 — Écran de classe et observation par caméra (24 oct. 2026)
+
+- **Écran de classe :** page web servie en local par `kalan/web.py` (WebSocket). Le cours, la voix et le micro restent en Python ; la page reçoit les gestes de Kalan (phrase dite avec l'enveloppe de la voix, élément pointé, nouvelle leçon, parole de l'élève) et les met en scène : avatar, diapositive auto-pilotée, schéma pointé, sous-titres. Architecture par évènements : chaque future fonctionnalité du cahier des charges (révision R9, tableau de bord enseignant R10, simulations R8) est un nouvel évènement et un nouveau module, sans toucher au reste.
+- **Hors ligne vérifié :** toutes les requêtes de la page vont vers `localhost` (contrôlé dans le navigateur). face-api et ses modèles (MIT, ~2 Mo) sont copiés dans `web/vendor/`.
+- **Caméra — choix prudents, parce qu'il s'agit d'enfants :**
+  - désactivée par défaut, activée par un geste explicite ; la page rappelle de demander l'accord de l'élève et de sa famille ;
+  - analyse dans le navigateur ; aucune image, aucune émotion n'est enregistrée ni envoyée. Seuls trois signaux lissés sur 3 s partent vers Kalan : présent, regarde l'écran, en difficulté ;
+  - usage limité à ce que ferait un enseignant qui lève les yeux : attendre un élève absent, proposer de réexpliquer, une remarque au plus par leçon. **Jamais de note, jamais de profil, jamais de rapport sur l'élève.**
+- **Risque à connaître pour la candidature :** la reconnaissance des émotions est **interdite dans l'enseignement** dans l'Union européenne (AI Act, art. 5-1-f, en vigueur depuis février 2025). Le Mali n'y est pas soumis, mais des bailleurs internationaux peuvent y être sensibles. Présenter la fonction comme des « signaux d'attention » facultatifs, et pouvoir la retirer sans rien casser (c'est le cas : sans caméra, Kalan fonctionne à l'identique).
+- **Limite technique :** l'expression du visage n'est pas la compréhension. « En difficulté » = expression soutenue de tristesse, colère, peur ou gêne pendant 3 s : un indice, pas un diagnostic.

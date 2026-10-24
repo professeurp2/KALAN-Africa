@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kalan — écran de classe</title>
+  <link rel="stylesheet" href="/web/style.css">
+</head>
+<body>
+  <header class="barre">
+    <div class="marque">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="var(--indigo)"/>
+        <path d="M12 9v22M12 20l13-11M15 18l11 13" stroke="var(--ocre)" stroke-width="4" stroke-linecap="round" fill="none"/></svg>
+      <div><strong>Kalan</strong><span>Assistant pédagogique hors ligne</span></div>
+    </div>
+    <div class="chapitre" id="chapitre">…</div>
+    <div class="etats">
+      <span class="puce ok" title="Aucune connexion Internet utilisée">● Hors ligne</span>
+      <span class="puce" id="puce-micro">🎤 Micro</span>
+      <button class="puce bouton" id="puce-camera" title="Activer ou couper l'observation par la caméra">📷 Caméra : non</button>
+    </div>
+  </header>
+
+  <main class="classe">
+    <aside class="prof">
+      <div class="scene">
+        <div class="pensee" id="pensee" aria-hidden="true"><i></i><i></i><i></i></div>
+        <svg id="avatar" viewBox="0 0 300 380" role="img" aria-label="Kalan, l'enseignant virtuel">
+          <defs>
+            <pattern id="bogolan" width="28" height="28" patternUnits="userSpaceOnUse">
+              <rect width="28" height="28" fill="var(--indigo)"/>
+              <path d="M0 14h28M14 0v28" stroke="var(--indigo-clair)" stroke-width="2"/>
+              <circle cx="7" cy="7" r="2.2" fill="var(--creme)" opacity=".75"/>
+              <circle cx="21" cy="21" r="2.2" fill="var(--creme)" opacity=".75"/>
+            </pattern>
+          </defs>
+          <g id="corps">
+            <path d="M48 380 C52 300 92 262 150 262 C208 262 248 300 252 380 Z" fill="url(#bogolan)"/>
+            <path d="M118 266 L150 304 L182 266" stroke="var(--ocre)" stroke-width="7" fill="none" stroke-linejoin="round"/>
+            <path d="M126 268 L150 296 L174 268" stroke="var(--argile)" stroke-width="3" fill="none"/>
+          </g>
+          <g id="bras">
+            <path d="M206 292 C236 302 256 320 264 344" stroke="var(--indigo-fonce)" stroke-width="28" stroke-linecap="round" fill="none"/>
+            <line x1="266" y1="346" x2="292" y2="246" stroke="var(--bois)" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="292" cy="246" r="4" fill="var(--ocre)"/>
+            <circle cx="266" cy="347" r="14" fill="var(--peau)"/>
+          </g>
+          <rect x="132" y="218" width="36" height="52" rx="14" fill="var(--peau-ombre)"/>
+          <g id="tete">
+            <ellipse cx="87" cy="152" rx="12" ry="18" fill="var(--peau-ombre)"/>
+            <ellipse cx="213" cy="152" rx="12" ry="18" fill="var(--peau-ombre)"/>
+            <ellipse cx="150" cy="148" rx="64" ry="78" fill="var(--peau)"/>
+            <path d="M84 140 C74 42 226 42 216 140 C214 116 204 100 190 96 C160 104 128 102 110 96 C96 102 86 118 84 140 Z" fill="var(--cheveux)"/>
+            <g id="sourcils" stroke="var(--cheveux)" stroke-width="5" stroke-linecap="round" fill="none">
+              <path d="M110 120 Q125 111 140 118"/><path d="M160 118 Q175 111 190 120"/>
+            </g>
+            <g id="yeux">
+              <ellipse cx="125" cy="140" rx="11" ry="12" fill="#fff"/>
+              <ellipse cx="175" cy="140" rx="11" ry="12" fill="#fff"/>
+              <g id="pupilles" fill="var(--cheveux)"><circle cx="126" cy="141" r="6"/><circle cx="176" cy="141" r="6"/>
+                <circle cx="128" cy="138.5" r="1.8" fill="#fff"/><circle cx="178" cy="138.5" r="1.8" fill="#fff"/></g>
+              <g id="paupieres" fill="var(--peau)">
+                <ellipse cx="125" cy="140" rx="12.5" ry="13.5"/><ellipse cx="175" cy="140" rx="12.5" ry="13.5"/>
+              </g>
+            </g>
+            <path d="M150 148 Q142 170 149 175 Q156 178 161 171" stroke="var(--peau-ombre)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+            <ellipse cx="114" cy="174" rx="12" ry="6" fill="var(--joues)" opacity=".35"/>
+            <ellipse cx="186" cy="174" rx="12" ry="6" fill="var(--joues)" opacity=".35"/>
+            <g id="bouche">
+              <path id="sourire" d="M128 193 Q150 210 172 193" stroke="var(--levres)" stroke-width="5" fill="none" stroke-linecap="round"/>
+              <ellipse id="bouche-ouverte" cx="150" cy="198" rx="15" ry="0" fill="var(--levres)"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div class="prof-nom">
+        <strong>Kalan</strong>
+        <span class="etat-prof" id="etat-prof">prêt</span>
+      </div>
+
+      <section class="camera" id="camera" hidden>
+        <video id="video" autoplay muted playsinline></video>
+        <ul class="signaux">
+          <li id="sig-present">Présent : …</li>
+          <li id="sig-regard">Regard : …</li>
+          <li id="sig-expression">Expression : …</li>
+        </ul>
+        <p class="note">Analyse sur cet appareil. Aucune image n'est enregistrée ni envoyée.</p>
+      </section>
+    </aside>
+
+    <section class="tableau" aria-live="polite">
+      <div class="progression" id="progression"></div>
+      <h1 id="titre-lecon">Le cours va commencer</h1>
+      <div class="contenu">
+        <ol class="points" id="points"></ol>
+        <figure class="schema" id="schema">
+          <div class="schema-svg" id="schema-svg"></div>
+          <div class="laser" id="laser" hidden></div>
+          <figcaption id="schema-legende"></figcaption>
+        </figure>
+      </div>
+      <footer class="source" id="source"></footer>
+    </section>
+  </main>
+
+  <footer class="dialogue">
+    <p class="sous-titre" id="sous-titre"></p>
+    <p class="eleve" id="eleve" hidden></p>
+  </footer>
+
+  <div class="accueil" id="accueil">
+    <div class="carte">
+      <svg viewBox="0 0 40 40" class="grand-logo" aria-hidden="true"><rect width="40" height="40" rx="10" fill="var(--indigo)"/>
+        <path d="M12 9v22M12 20l13-11M15 18l11 13" stroke="var(--ocre)" stroke-width="4" stroke-linecap="round" fill="none"/></svg>
+      <h2>Bonjour, je suis Kalan.</h2>
+      <p class="lead">Je fais cours à voix haute, je te montre le schéma, et tu peux m'interrompre quand tu veux pour poser une question.</p>
+      <p class="chap" id="accueil-chapitre"></p>
+      <label class="option"><input type="checkbox" id="opt-camera">
+        <span>Observer l'élève par la caméra<br><small>Présence, regard, expression. Analyse sur cet appareil, aucune image enregistrée. Demander l'accord de l'élève et de sa famille.</small></span></label>
+      <button class="commencer" id="commencer" disabled>Préparation…</button>
+      <p class="aide">Parle à voix claire, un peu plus fort que Kalan. Dis « répète », « continue » ou « arrête » à tout moment.</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+  <script type="module" src="/web/app.js"></script>
+</body>
+</html>

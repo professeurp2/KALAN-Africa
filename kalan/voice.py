@@ -113,20 +113,46 @@ class Micro:
         return None
 
 
+def enveloppe(pcm: np.ndarray, rate: int, pas_s: float = 0.04) -> list[float]:
+    """Volume de la voix toutes les 40 ms, entre 0 et 1 : de quoi animer la bouche de l'avatar."""
+    n = max(1, int(rate * pas_s))
+    x = pcm.astype(np.float32) / 32768
+    niveaux = [_rms(x[i:i + n]) for i in range(0, len(x), n)]
+    haut = max(niveaux, default=0) or 1
+    return [round(min(1.0, v / haut), 2) for v in niveaux]
+
+
 class ClasseVocale:
-    """La classe réelle pour kalan.cours : haut-parleur, micro, Whisper, écran texte."""
+    """La classe réelle pour kalan.cours : haut-parleur, micro, Whisper, écran texte.
+
+    Les méthodes annoncer, interrompu, entendu et afficher sont les points
+    d'affichage : la page web (kalan.web) les redéfinit.
+    """
 
     def __init__(self, transcrire: "Transcriber", speaker: "Speaker", micro: Micro):
         self.transcrire, self.speaker, self.micro = transcrire, speaker, micro
         self.recent: list[str] = []  # dernières phrases de Kalan, contexte pour Whisper
 
     def dire(self, seg) -> str | None:
-        print(f"💬 {seg.texte}" + (f"   [→ pointe : {seg.pointe}]" if seg.pointe else ""))
+        pcm = self.speaker.synth(seg.texte)
         self.recent = (self.recent + [seg.texte])[-2:]
-        return self._texte(self.micro.jouer(self.speaker.synth(seg.texte), self.speaker.rate))
+        self.annoncer(seg, pcm)
+        audio = self.micro.jouer(pcm, self.speaker.rate)
+        if audio is not None:
+            self.interrompu()
+        return self._texte(audio)
 
     def ecouter(self, attente: float) -> str | None:
         return self._texte(self.micro.ecouter(attente))
+
+    def annoncer(self, seg, pcm: np.ndarray):
+        print(f"💬 {seg.texte}" + (f"   [→ pointe : {seg.pointe}]" if seg.pointe else ""))
+
+    def interrompu(self):
+        pass
+
+    def entendu(self, texte: str):
+        print(f"🙋 {texte}")
 
     def afficher(self, texte: str):
         print(texte)
@@ -136,7 +162,7 @@ class ClasseVocale:
             return None
         texte = self.transcrire(audio, " ".join(self.recent)).strip()
         if texte:
-            print(f"🙋 {texte}")
+            self.entendu(texte)
         return texte or None
 
 

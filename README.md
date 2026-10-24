@@ -35,6 +35,21 @@ python -m kalan.cli --voix --mains-libres        # micro : écoute dès qu'on pa
 python -m kalan.cli --cours                      # Kalan fait cours ; on l'interrompt à la voix
 ```
 
+**Écran de classe** (le mode cours, en image) :
+
+```bash
+python -m kalan.web                              # ouvre http://localhost:8765
+```
+
+Kalan apparaît sous forme d'avatar qui parle (bouche synchronisée sur la voix, bras qui pointe le
+tableau). La diapositive avance toute seule avec le cours, les points s'allument au fil de la parole,
+le schéma s'éclaire sur l'élément dont Kalan parle (R7), les sous-titres suivent la voix mot à mot.
+Option **caméra** (désactivée par défaut) : présence, regard vers l'écran, expression, calculés dans
+le navigateur avec des modèles locaux ; Kalan attend un élève absent et propose de réexpliquer à un
+élève qui semble en difficulté. Aucune image n'est enregistrée ni envoyée. Aucune ressource Internet
+n'est chargée par la page. Pour ajouter une fonctionnalité : un nouvel évènement dans `kalan/web.py`
+et un module dans `web/` (voir `GESTES` dans `web/app.js`).
+
 **Mode cours.** Kalan déroule le chapitre leçon par leçon, en pointant le schéma, et laisse
 une courte pause après chaque phrase. L'élève peut parler à tout moment, même pendant que
 Kalan parle : Kalan s'arrête, répond (réponse ancrée et citée), dit « On reprend » et redit la
