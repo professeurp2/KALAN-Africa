@@ -22,8 +22,10 @@ CHUNK_OVERLAP = 30
 # --- Recherche / ancrage (R4, R5) ---
 TOP_K = 4
 # En dessous de ce score cosinus, on refuse sans même interroger le LLM.
-# À calibrer sur de vraies questions d'élèves.
-MIN_SIMILARITY = 0.45
+# Calibré le 24 oct. 2026 sur 12 questions (chapitre d'exemple) : les questions
+# hors sujet total tombent sous 0,35 ; les voisines du sujet (0,6) sont refusées par le LLM.
+# À recalibrer sur de vraies questions d'élèves et le chapitre officiel.
+MIN_SIMILARITY = 0.35
 
 # --- LLM local ---
 # Prototype ordinateur : Ollama. Cible tablette : Gemma 3n via LiteRT.

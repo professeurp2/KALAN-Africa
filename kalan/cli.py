@@ -20,6 +20,9 @@ def main(argv=None):
     os.environ.setdefault("HF_HUB_OFFLINE", "1")
     os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
+    import requests
+
+    from . import config
     from .assistant import Assistant
     from .index import Index, load_embedder
 
@@ -49,7 +52,10 @@ def main(argv=None):
             print(f"❓ {question}")
 
         t0 = time.perf_counter()
-        rep = assistant.repondre(question)
+        try:
+            rep = assistant.repondre(question)
+        except requests.ConnectionError:
+            raise SystemExit(f"Le LLM local ne répond pas sur {config.OLLAMA_URL} : lancer `ollama serve`.")
         print(f"   ({time.perf_counter() - t0:.1f} s)")
         for seg in rep.segments:
             print(f"💬 {seg.texte}" + (f"   [→ pointe : {seg.pointe}]" if seg.pointe else ""))
