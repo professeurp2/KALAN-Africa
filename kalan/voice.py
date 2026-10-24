@@ -118,9 +118,11 @@ class ClasseVocale:
 
     def __init__(self, transcrire: "Transcriber", speaker: "Speaker", micro: Micro):
         self.transcrire, self.speaker, self.micro = transcrire, speaker, micro
+        self.recent: list[str] = []  # dernières phrases de Kalan, contexte pour Whisper
 
     def dire(self, seg) -> str | None:
         print(f"💬 {seg.texte}" + (f"   [→ pointe : {seg.pointe}]" if seg.pointe else ""))
+        self.recent = (self.recent + [seg.texte])[-2:]
         return self._texte(self.micro.jouer(self.speaker.synth(seg.texte), self.speaker.rate))
 
     def ecouter(self, attente: float) -> str | None:
@@ -132,7 +134,7 @@ class ClasseVocale:
     def _texte(self, audio: np.ndarray | None) -> str | None:
         if audio is None:
             return None
-        texte = self.transcrire(audio).strip()
+        texte = self.transcrire(audio, " ".join(self.recent)).strip()
         if texte:
             print(f"🙋 {texte}")
         return texte or None
@@ -150,10 +152,14 @@ class Transcriber:
                                   download_root=str(config.MODELS_DIR / "whisper"))
         self.prompt = ("Question d'un élève sur sa leçon : " + " ; ".join(titres) + ".") if titres else None
 
-    def __call__(self, audio: np.ndarray) -> str:
+    def __call__(self, audio: np.ndarray, contexte: str = "") -> str:
+        """`contexte` : ce que Kalan vient de dire ; l'élève en reprend souvent les mots."""
+        prompt = " ".join(p for p in (self.prompt, contexte) if p) or None
         segments, _ = self.model.transcribe(audio, language="fr", vad_filter=True, beam_size=5,
-                                            initial_prompt=self.prompt)
-        return " ".join(s.text.strip() for s in segments).strip()
+                                            initial_prompt=prompt)
+        # Segments que Whisper juge être du silence ou du bruit : on les écarte.
+        return " ".join(s.text.strip() for s in segments
+                        if not (s.no_speech_prob > 0.6 and s.avg_logprob < -1.0)).strip()
 
 
 class Speaker:

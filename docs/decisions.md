@@ -46,3 +46,11 @@ Chaque décision : ce qui est choisi, pourquoi, ce que ça coûte de la changer.
 - **Après une question :** réponse ancrée (même pipeline que le mode questions), « On reprend », puis la phrase coupée est redite en entier.
 - **Écart au cahier des charges :** §11 préconisait « appuyer pour parler » en classe bruyante. Le mode cours vise un élève seul ou un petit groupe, idéalement avec un casque. En classe pleine, garder `--voix` (Entrée).
 - **Limite connue :** l'écho est mesuré, pas annulé. Une vraie annulation d'écho (AEC Android/WebRTC) sera à brancher sur tablette.
+
+## D8 — Kalan comprend l'élève en contexte (24 oct. 2026)
+
+- **Constat (premier essai réel du mode cours) :** toutes les interruptions recevaient le même refus. Whisper transcrit mal (« gératère » pour « générateur ») et chaque phrase était traitée comme une question isolée ; « écoute », « reprends », « pas compris » étaient refusés comme hors programme.
+- **Choix :** pendant le cours, un seul appel LLM comprend et réagit, avec la **leçon en cours**, la **dernière phrase dite** et les passages proches. Types : `question`, `pas_compris` (réexpliquer autrement), `bavardage`, `hors_programme`, `incompris` (faire répéter). Tri rapide sans LLM pour « répète / continue / arrête » et les hallucinations de Whisper.
+- **Whisper** reçoit aussi les deux dernières phrases de Kalan comme contexte, et ignore les segments qu'il juge être du silence.
+- **Formules variées** (reprises, refus, « c'est clair ? ») pour éviter l'effet machine.
+- **Constat important — relecture enseignante obligatoire :** avec la consigne « plus vivante », le LLM 7B a ajouté dans la leçon 3 des notions absentes du chapitre (électrons, « pas une réalité physique »). Justes en physique, mais hors programme. Corrigé à la main dans `data/cours/`. **Tout cours généré doit être relu par un enseignant avant la classe** ; c'est un argument à mettre en avant auprès du ministère, pas une faiblesse à cacher.

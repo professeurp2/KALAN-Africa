@@ -6,32 +6,28 @@
       "citation": "Chapitre 3 — Le circuit électrique simple · Leçon 1 — Les éléments d'un circuit · p. 42",
       "segments": [
         {
-          "texte": "Un circuit électrique simple comprend quatre éléments principaux.",
+          "texte": "Qu'est-ce qui permet à l'électricité de circuler dans un circuit ?",
           "pointe": null
         },
         {
-          "texte": "Le générateur fournit le courant électrique, comme une pile.",
+          "texte": "Le générateur fournit le courant électrique.",
+          "pointe": null
+        },
+        {
+          "texte": "Une pile est un exemple de générateur avec ses bornes + et -.",
           "pointe": "pile"
         },
         {
-          "texte": "La pile a deux bornes, la positive et la négative.",
-          "pointe": "pile"
-        },
-        {
-          "texte": "Le récepteur reçoit le courant et le transforme, par exemple une lampe.",
+          "texte": "Le récepteur, comme la lampe, transforme l'énergie électrique.",
           "pointe": "lampe"
         },
         {
-          "texte": "L'interrupteur permet de contrôler le circuit, en l'ouvrant ou en le fermant.",
+          "texte": "L'interrupteur contrôle le passage du courant en ouvrant ou fermant le circuit.",
           "pointe": "interrupteur"
         },
         {
-          "texte": "Les fils de connexion relient tous les éléments ensemble.",
-          "pointe": null
-        },
-        {
-          "texte": "Le courant circule dans le circuit, comme indiqué par la flèche.",
-          "pointe": "sens_courant"
+          "texte": "Les fils de connexion relient tous les éléments du circuit.",
+          "pointe": "fils"
         }
       ]
     },
@@ -40,32 +36,28 @@
       "citation": "Chapitre 3 — Le circuit électrique simple · Leçon 2 — Circuit ouvert et circuit fermé · p. 43",
       "segments": [
         {
-          "texte": "Quand l'interrupteur est fermé, la lampe brille.",
+          "texte": "Qu'est-ce qui se passe quand on ferme l'interrupteur de la lampe ?",
           "pointe": null
         },
         {
-          "texte": "Si l'interrupteur est ouvert, la lampe s'éteint.",
+          "texte": "Le courant circule et la lampe s'allume.",
           "pointe": null
         },
         {
-          "texte": "Un fil débranché ou une lampe grillée rendent le circuit ouvert.",
+          "texte": "Maintenant, imagine que l'interrupteur est ouvert, que se passe-t-il alors ?",
           "pointe": null
         },
         {
-          "texte": "Le circuit est fermé si la boucle est continue, comme quand l'interrupteur est fermé.",
+          "texte": "Le courant ne peut pas circuler et la lampe s'éteint.",
           "pointe": null
         },
         {
-          "texte": "Le circuit est ouvert si la boucle est coupée, comme quand l'interrupteur est ouvert.",
+          "texte": "Un circuit est ouvert quand la boucle est coupée, peu importe l'état de l'interrupteur.",
           "pointe": null
         },
         {
-          "texte": "La pile fournit l'énergie pour que le courant circule.",
-          "pointe": "pile"
-        },
-        {
-          "texte": "Les fils permettent le passage du courant.",
-          "pointe": "fils"
+          "texte": "Par exemple, si un fil est débranché ou si la lampe est grillée, le circuit est ouvert.",
+          "pointe": null
         }
       ]
     },
@@ -74,19 +66,23 @@
       "citation": "Chapitre 3 — Le circuit électrique simple · Leçon 3 — Le sens du courant · p. 44",
       "segments": [
         {
-          "texte": "Le courant électrique sort de la borne positive de la pile.",
+          "texte": "Dans quel sens circule le courant dans le circuit, à ton avis ?",
           "pointe": null
         },
         {
-          "texte": "Il rentre dans la borne négative de la pile.",
+          "texte": "On a choisi une règle pour tout le monde : on l'appelle une convention.",
           "pointe": null
         },
         {
-          "texte": "On utilise une flèche pour représenter le sens du courant.",
+          "texte": "À l'extérieur de la pile, le courant va de la borne positive vers la borne négative.",
+          "pointe": "pile"
+        },
+        {
+          "texte": "Pour le montrer, on dessine une flèche sur un fil du circuit.",
           "pointe": "sens_courant"
         },
         {
-          "texte": "Cette flèche montre comment le courant circule dans le circuit.",
+          "texte": "Regarde : cette flèche indique le sens du courant.",
           "pointe": "sens_courant"
         }
       ]
@@ -96,31 +92,31 @@
       "citation": "Chapitre 3 — Le circuit électrique simple · Leçon 4 — Le schéma normalisé · p. 45",
       "segments": [
         {
-          "texte": "La pile est représentée par deux traits parallèles de longueurs différentes.",
+          "texte": "Qu'est-ce qui permet à tout le monde de comprendre un circuit électrique, peu importe la langue ?",
+          "pointe": null
+        },
+        {
+          "texte": "On utilise des symboles standardisés pour représenter les composants.",
+          "pointe": null
+        },
+        {
+          "texte": "La pile est marquée par deux traits parallèles, le plus long pour la borne positive.",
           "pointe": "pile"
         },
         {
-          "texte": "Le grand trait représente la borne positive de la pile.",
-          "pointe": null
-        },
-        {
-          "texte": "La lampe est représentée par un cercle contenant une croix.",
+          "texte": "La lampe est représentée par un cercle avec une croix à l'intérieur.",
           "pointe": "lampe"
         },
         {
-          "texte": "L'interrupteur ouvert est représenté par un trait incliné.",
+          "texte": "L'interrupteur est montré par un trait incliné, qui peut être ouvert ou fermé.",
           "pointe": "interrupteur"
         },
         {
-          "texte": "Un schéma normalisé permet à tout le monde de comprendre le circuit, quelle que soit la langue parlée.",
-          "pointe": null
+          "texte": "Les fils de connexion forment la boucle du circuit, reliant tous les composants.",
+          "pointe": "fils"
         },
         {
-          "texte": "Les fils de connexion forment la boucle du circuit.",
-          "pointe": null
-        },
-        {
-          "texte": "La flèche montre le sens conventionnel du courant dans le circuit.",
+          "texte": "Le sens du courant est indiqué par une flèche, même si c'est conventionnel.",
           "pointe": "sens_courant"
         }
       ]
